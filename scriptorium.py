@@ -15,72 +15,89 @@ import datetime
 import logging.handlers
 import requests
 
-APPNAME = "PatchManager"
+APPNAME = "scriptorium"
 LOGLEVEL = logging.DEBUG
+
+# where to stash the XML
+xml_dir = "~/store/scriptorium/xml"
+
+# where to stash the script
+sh_dir = "~/store/scriptorium/shell"
 
 __all__ = [APPNAME]
 
 logger = logging.getLogger(APPNAME)
 
-def setup_logging():
-    """Defines a nicely formatted logger"""
+class Jamf():
+    """ Exists to carry some variables for talking to JPC"""
 
-    print("logging")
-    LOGFILE = "/usr/local/var/log/%s.log" % APPNAME
+    def __init__(self):
+        self.scriptsURL = ""
+        self.auth = ""
+        self.hdrs = ""
+        self.cookies = ""
 
-    logger = logging.getLogger(APPNAME)
-    ch = logging.handlers.TimedRotatingFileHandler(
-        LOGFILE, when="D", interval=1, backupCount=7
-    )
-    ch.setFormatter(
-        logging.Formatter(
-            "%(asctime)s %(levelname)s %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
+class Scripts():
+
+    def setup_logging():
+        """Defines a nicely formatted logger"""
+
+        print("logging")
+        LOGFILE = "/usr/local/var/log/%s.log" % APPNAME
+
+        logger = logging.getLogger(APPNAME)
+        ch = logging.handlers.TimedRotatingFileHandler(
+            LOGFILE, when="D", interval=1, backupCount=7
         )
-    )
-    logger.addHandler(ch)
-    logger.setLevel(LOGLEVEL)
+        ch.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+        logger.addHandler(ch)
+        logger.setLevel(LOGLEVEL)
 
-def main():
-    setup_logging()
-    logger.info("Start")
-    print(argv)
+    def main():
+        setup_logging()
+        logger.info("Start")
+        jpc = Jamf()
 
-    # get prefs
-    plist = path.expanduser(
-        "~/Library/Preferences/com.github.autopkg.plist"
-    )
-    fp = open(plist, "rb")
-    prefs = plistlib.load(fp)
-    base = prefs["JSS_URL"] + "/JSSResource/"
-    # because we only operate on scripts creeate a URL for the endpoint
-    scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
-    # for the whole list JSON is handier so
-    hdrs = {"Accept": "application/json"}
-    auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])
-    logger.debug("Prefs loaded")
+        # get prefs
+        plist = path.expanduser(
+            "~/Library/Preferences/com.github.autopkg.plist"
+        )
+        fp = open(plist, "rb")
+        prefs = plistlib.load(fp)
+        base = prefs["JSS_URL"] + "/JSSResource/"
+        # because we only operate on scripts create a URL for the endpoint
+        jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
+        # for the whole list JSON is handier so
+        jpc.hdrs = {"Accept": "application/json"}
+        jpc.auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])
+        logger.debug("Prefs loaded")
 
-    # main routine
-    ret = requests.get(scriptsURL, auth=auth, headers=hdrs)
-    if ret.status_code != 200:
-        print("script list get failed: %s" % ret.status_code)
-        exit()
-
-    # main loop
-    for script in ret.json()['scripts']:
-        idn = script['id']
-        print(f"{idn}: {script['name']}")
-        # we want XML so don't set a header
-        ret = requests.get(f"{scriptsURL}/id/{idn}", auth=auth)
+        # main routine
+        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
         if ret.status_code != 200:
-            print(f"script get failed: {ret.status_code} : {ret.url}")
+            print("script list get failed: %s" % ret.status_code)
             exit()
-        xml = ret.text
-        root = ET.fromstring(xml)
-        text = root.findtext('script_contents')
-        if not text:
-            print("damn")
-        # print(text)
+
+        # main loop
+        for script in ret.json()['scripts']:
+            idn = script['id']
+            print(f"{idn}: {script['name']}")
+            # we want XML so don't set a header
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", jpc.auth=auth)
+            if ret.status_code != 200:
+                print(f"script get failed: {ret.status_code} : {ret.url}")
+                exit()
+            xml = ret.text
+            root = ET.fromstring(xml)
+            text = root.findtext('script_contents')
+            if not text:
+                print("damn")
+            # print(text)
 
 if __name__ == '__main__':
-    main()
+    Scripts.main()
