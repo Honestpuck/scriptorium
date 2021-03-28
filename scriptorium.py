@@ -9,24 +9,24 @@ __version__ = "1.0.8"
 
 from os import path
 from sys import argv
+import argparse
 import plistlib
 import xml.etree.ElementTree as ET
 import datetime
 import logging.handlers
 import requests
 
-APPNAME = "scriptorium"
 LOGLEVEL = logging.DEBUG
-
-# where to stash the XML
+ 
+# where to stash the XML files
 xml_dir = "~/store/scriptorium/xml"
 
-# where to stash the script
+# where to stash the script files
 sh_dir = "~/store/scriptorium/shell"
 
-__all__ = [APPNAME]
+__all__ = [__name__]
 
-logger = logging.getLogger(APPNAME)
+logger = logging.getLogger(__name__)
 
 class Jamf():
     """ Exists to carry some variables for talking to JPC"""
@@ -36,6 +36,14 @@ class Jamf():
         self.auth = ""
         self.hdrs = ""
         self.cookies = ""
+
+
+class Parser():
+    """ our command line argument parser """
+
+    def __init__(self):
+        self.parser = argparse.ArgumentParser()
+
 
 class Scripts():
 
@@ -58,11 +66,12 @@ class Scripts():
         logger.addHandler(ch)
         logger.setLevel(LOGLEVEL)
 
-    def main():
-        setup_logging()
+    def main(self):
+        self.setup_logging()
         logger.info("Start")
         jpc = Jamf()
-
+        timmy = Parser()
+        args = timmy.parse(sys.argv())
         # get prefs
         plist = path.expanduser(
             "~/Library/Preferences/com.github.autopkg.plist"
@@ -88,7 +97,7 @@ class Scripts():
             idn = script['id']
             print(f"{idn}: {script['name']}")
             # we want XML so don't set a header
-            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", jpc.auth=auth)
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
             if ret.status_code != 200:
                 print(f"script get failed: {ret.status_code} : {ret.url}")
                 exit()
@@ -100,4 +109,4 @@ class Scripts():
             # print(text)
 
 if __name__ == '__main__':
-    Scripts.main()
+    Scripts.main(argv)
