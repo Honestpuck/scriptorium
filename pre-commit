@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+
+from os import path
+import plistlib
+import xml.etree.ElementTree as ET
+import logging.handlers
+import requests
+import subprocess
+
+command=['git', 'diff', '--cached', '--name-only', '-z', 'HEAD']
+
+complete=subprocess.run(command, text=True, capture_output=True)
+if complete.returncode != 0:
+	print("git diff failed")
+	print(complete.stderr)
+	exit(1)
+
+if complete.stdout == '':
+	print("No files to commit")
+	exit(1)
+
+files = complete.stdout.split('\0')
+
+# the last itrm in the list will be a blank as the -z option above
+# ends every name with '\0' so split will do an empty item at the end
+for fn in files[:-1]:
+	print(f":{fn}")
+
+exit(1)
