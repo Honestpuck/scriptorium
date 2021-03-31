@@ -31,7 +31,7 @@ prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
 
 class Jamf:
-    """ Exists to carry some variables for talking to JPC"""
+    """ Exists to carry some variables for talking to JPC """
 
     def __init__(self):
         self.scriptsURL = ""

@@ -6,6 +6,7 @@
 # software system for handling the scripts in Jamf Pro
 # providing easy editing and a revision system
 
+__program__ = "scriptorium"
 __author__ = "Tony Williams"
 __email__ = "tonyw@honestpuck.com"
 __copyright__ = "Copyright (c) 2021 Tony Williams"
@@ -23,192 +24,43 @@ import subprocess
 
 LOGLEVEL = logging.DEBUG
 
-# where to stash the XML files
+# where we stash the XML files
 xml_dir = "~/work/test/xml"
 
-# where to stash the script files
+# where we stash the script files
 sh_dir = "~/work/test/scripts"
 
 # prefs file
 prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
-__all__ = [__name__]
+LOGFILE = f"/usr/local/var/log/{__program__}.log"
+logger = logging.getLogger(__program__)
 
-logger = logging.getLogger("scriptorium")
+
+def info(msg):
+    print(msg)
+    logger.info(msg)
 
 
 class Jamf:
-    """ Exists to carry some variables for talking to JPC"""
+    """ Exists to carry some variables"""
 
     def __init__(self):
         self.scriptsURL = ""  # URL for accessing JPC scripts
         self.auth = ""  # name and password for JPC
         self.hdrs = ""  # header for requests, for JSON instead of XML
         # cookie for requests, makes sure you hit the same server each time
-        self.cookies = ""
-        self.xml_out = ""  # directory for XML files
-        self.sh_out = ""  # direcotry for text of script
+        # not required (yet)
+        # self.cookies = ""
+        # for this software
+        self.xml_dir = ""
+        self.sh_dir = ""
 
 
-class Scripts:
-    def setup_logging():
-        """Defines a nicely formatted logger"""
+class Parser:
+    """ Parses the command line and runs the right function """
 
-        LOGFILE = "/usr/local/var/log/%s.log" % __name__
-
-        logger = logging.getLogger(__name__)
-        ch = logging.handlers.TimedRotatingFileHandler(
-            LOGFILE, when="D", interval=1, backupCount=7
-        )
-        ch.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(levelname)s %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
-        logger.addHandler(ch)
-        logger.setLevel(LOGLEVEL)
-
-    def do_list(args, jpc):
-        """ subcommand `list` """
-        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
-        if ret.status_code != 200:
-            print("list get failed with error: %s" % ret.status_code)
-            exit(1)
-        for script in ret.json()["scripts"]:
-            idn = script["id"]
-            name = script["name"]
-            print(f"{idn}:\t{name}")
-        exit()
-
-    def do_out(args, jpc):
-        """ subcommand `out` """
-        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
-        if ret.status_code != 200:
-            print("list get failed with error: %s" % ret.status_code)
-            exit(1)
-        for script in ret.json()["scripts"]:
-            idn = script["id"]
-            name = script["name"]
-            # we want XML so don't set a header
-            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
-            if ret.status_code != 200:
-                print(f"script get failed: {ret.status_code} : {ret.url}")
-                exit(1)
-            xml = ret.text
-            root = ET.fromstring(xml)
-            text = root.findtext("script_contents")
-            xml_filepath = f"{jpc.xml_out}/{name}"
-            sh_filepath = f"{jpc.sh_out}/{name}"
-            if args.force or not os.path.isfile(xml_filepath):
-                print(f"Writing XML {name}")
-                with open(xml_filepath, "w") as fp:
-                    fp.write(xml)
-            if args.force or not os.path.isfile(sh_filepath):
-                print(f"Writing script {name}")
-                with open(sh_filepath, "w") as fp:
-                    fp.write(text)
-        exit()
-
-    def do_in(args, jpc):
-        # first change to scripts directory
-        os.chdir(jpc.sh_out)
-        # then see if we do have scripts to be done
-        command = ["git", "diff", "--cached", "--name-only", "-z", "HEAD"]
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            print("git diff in scripts directory failed")
-            # git diff prints a heap so give our user just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            exit(1)
-        if complete.stdout == "":
-            print("No files to commit")
-            exit(1)
-        # we have work to do
-        files = complete.stdout.split("\0")
-        lst = " ".join(files)
-        if not args.no_commit:
-            print(f"Processing {lst}")
-            msg = args.message if args.message else lst
-            command = ["git", "commit", "-a", "-m", msg]
-            complete = subprocess.run(command, text=True, capture_output=True)
-            if complete.returncode != 0:
-                print("git commit in scripts directory failed")
-                # git can print a heap so give our user just the first 5 lines
-                lines = complete.stderr.split("\n")
-                for i in lines[0:5]:
-                    print(i)
-                exit(1)
-            print(complete.stdout)
-            if args.push:
-                command = ["git", "push"]
-                complete = subprocess.run(
-                    command, text=True, capture_output=True
-                )
-                if complete.returncode != 0:
-                    print("git push in scripts directory failed")
-                    # git can print a heap so give our user
-                    # just the first 5 lines
-                    lines = complete.stderr.split("\n")
-                    for i in lines[0:5]:
-                        print(i)
-                    exit(1)
-                print("Scripts Directory:")
-                print(complete.stdout)
-                os.chdir(jpc.xnl_out)
-                complete = subprocess.run(
-                    command, text=True, capture_output=True
-                )
-                if complete.returncode != 0:
-                    print("git push in XML directory failed")
-                    # git can print a heap so give our user
-                    # just the first 5 lines
-                    lines = complete.stderr.split("\n")
-                    for i in lines[0:5]:
-                        print(i)
-                    exit(1)
-                print("XML Directory:")
-                print(complete.stdout)
-        exit()
-
-    def do_change(args, jpc):
-        command = ["git", "push"]
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            print("git push in scripts directory failed")
-            # git can print a heap so give our user just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            exit(1)
-            print("Scripts Directory:")
-            print(complete.stdout)
-            os.chdir(jpc.xnl_out)
-            complete = subprocess.run(command, text=True, capture_output=True)
-            if complete.returncode != 0:
-                print("git commit in XML directory failed")
-                # git can print a heap so give our user just the first 5 lines
-                lines = complete.stderr.split("\n")
-                for i in lines[0:5]:
-                    print(i)
-                exit(1)
-            print("XML Directory:")
-            print(complete.stdout)
-        exit()
-
-    def do_rm(args, jpc):
-        print("rm not implemented")
-        exit()
-
-    def do_add(args, jpc):
-        print("add not implemented")
-        if args.filename:
-            print(args.filename)
-        exit()
-
-    def command_parser():
+    def __init__(self):
         "build our command line parser"
         parser = argparse.ArgumentParser(
             epilog="for command help: `scriptorium <command> -h`"
@@ -221,36 +73,51 @@ class Scripts:
         parser_ls.set_defaults(func=Scripts.do_list)
 
         # create parser for `out`
-        parser_out = subparsers.add_parser(
-            "out", help="pulls all scripts out of the server"
+        parser_down = subparsers.add_parser(
+            "down", help="downloads all scripts out of the server"
         )
-        parser_out.add_argument(
-            "-f",
-            "--force",
-            help="force overwrite of existing script",
+        parser_down.add_argument(
+            "-n",
+            "--no-force",
+            help="don't force overwrite of existing script or XML file",
             action="store_true",
         )
-        parser_out.set_defaults(func=Scripts.do_out)
+        parser_down.set_defaults(func=Scripts.do_down)
 
-        # create parser for 'in'
-        parser_in = subparsers.add_parser(
-            "in", help="add new or changed scripts and commit"
+        # create parser for 'up'
+        parser_up = subparsers.add_parser(
+            "ip", help="add new or changed scripts and commit"
         )
-        parser_in.add_argument(
+        parser_up.add_argument(
             "-p",
             "--push",
             help="do a git push after commit",
             action="store_true",
         )
-        parser_in.set_defaults(func=Scripts.do_in)
-
-        # create parser for `change`
-        parser_ch = subparsers.add_parser(
-            "change", help="change the name of a script"
+        parser_up.add_argument(
+            "-n",
+            "--no-commit",
+            help="don't do a commit",
+            action="store_true",
         )
-        parser_ch.add_argument("name", help="current name of script")
-        parser_ch.add_argument("new", help="new name of script")
-        parser_ch.set_defaults(func=Scripts.do_change)
+        parser_up.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_up.set_defaults(func=Scripts.do_up)
+
+        # create parser for `rename`
+        parser_re = subparsers.add_parser("rename", help="rename a script")
+        parser_re.add_argument(
+            "-n",
+            "--no-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_re.add_argument("name", help="current name of script")
+        parser_re.add_argument("new", help="new name of script")
+        parser_re.set_defaults(func=Scripts.do_rename)
 
         # create parser for `rm`
         parser_rm = subparsers.add_parser(
@@ -284,21 +151,178 @@ class Scripts:
             "-z", "--zero", help="zero parameters for script"
         )
         parser_add.set_defaults(func=Scripts.do_add)
+        self.parser = parser
 
-        return parser
+
+class ScriptError(Exception):
+    def __init__(self, message):
+        print(f"scriptorium: error: {message}", file=sys.stderr)
+        logger.error(f"scriptorium: error: {message}")
+        exit(1)
+
+
+class Scripts:
+    def setup_logging():
+        """Defines a nicely formatted logger"""
+
+        ch = logging.handlers.TimedRotatingFileHandler(
+            LOGFILE, when="D", interval=1, backupCount=7
+        )
+        ch.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+        logger.addHandler(ch)
+        logger.setLevel(LOGLEVEL)
+
+    def do_list(args, jpc):
+        """ subcommand `list` """
+        logger.info("list command")
+        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
+        if ret.status_code != 200:
+            raise ScriptError(f"list get failed with error: {ret.status_code}")
+        for script in ret.json()["scripts"]:
+            idn = script["id"]
+            name = script["name"]
+            print(f"{idn}:\t{name}")
+        exit()
+
+    def do_down(args, jpc):
+        """ subcommand `down` """
+        logger.info("down command")
+        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
+        if ret.status_code != 200:
+            raise ScriptError(f"list get failed with error: {ret.status_code}")
+        for script in ret.json()["scripts"]:
+            idn = script["id"]
+            name = script["name"]
+            # we want XML so don't set a header
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
+            if ret.status_code != 200:
+                raise ScriptError(
+                    f"script get failed: {ret.status_code} : {ret.url}"
+                )
+            xml = ret.text
+            root = ET.fromstring(xml)
+            text = root.findtext("script_contents")
+            xml_filepath = f"{jpc.xml_dir}/{name}"
+            sh_filepath = f"{jpc.sh_dir}/{name}"
+            if not args.no_force or not os.path.isfile(xml_filepath):
+                info(f"Writing XML {name}")
+                with open(xml_filepath, "w") as fp:
+                    fp.write(xml)
+            if not args.no_force or not os.path.isfile(sh_filepath):
+                info(f"Writing script {name}")
+                with open(sh_filepath, "w") as fp:
+                    fp.write(text)
+        # we now do a "git add" so any new scripts in the JPC are tracked
+
+        # we now do a commit, but with --no-verify since we know that
+        # the JPC and our two directories are already synced.
+        exit()
+
+    def do_up(args, jpc):
+        logger.info("up command")
+        # first change to scripts directory
+        os.chdir(jpc.sh_out)
+        # then see if we do have scripts to be done
+        command = ["git", "diff", "--name-only", "-z", "HEAD"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git diff prints a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git diff in scripts directory failed")
+        if complete.stdout == "":
+            raise ScriptError("No files to process")
+            exit(1)
+        # we have work to do
+        files = complete.stdout.split("\0")
+        lst = " ".join(files[:-1])
+        if not args.no_commit:
+            info(f"Processing {lst}")
+            msg = args.message if args.message else f"Up: {lst}"
+            command = ["git", "commit", "-a", "-m", msg]
+            complete = subprocess.run(command, text=True, capture_output=True)
+            if complete.returncode != 0:
+                # git can print a heap so give our user just the first 5 lines
+                lines = complete.stderr.split("\n")
+                for i in lines[0:5]:
+                    print(i)
+                raise ScriptError("git commit in scripts directory failed")
+            info(complete.stdout)
+            if args.push:
+                command = ["git", "push"]
+                logger.info("pushing")
+                complete = subprocess.run(
+                    command, text=True, capture_output=True
+                )
+                if complete.returncode != 0:
+                    # git can print a heap so give our user
+                    # just the first 5 lines
+                    lines = complete.stderr.split("\n")
+                    for i in lines[0:5]:
+                        print(i)
+                    raise ScriptError("git push in scripts directory failed")
+                info("Scripts Directory:")
+                print(complete.stdout)
+                os.chdir(jpc.xml_dir)
+                complete = subprocess.run(
+                    command, text=True, capture_output=True
+                )
+                if complete.returncode != 0:
+                    # git can print a heap so give our user
+                    # just the first 5 lines
+                    lines = complete.stderr.split("\n")
+                    for i in lines[0:5]:
+                        print(i)
+                    raise ScriptError("git push in XML directory failed")
+                print("XML Directory:")
+                print(complete.stdout)
+        exit()
+
+    def do_rename(args, jpc):
+        print("rename not implemented")
+        print(args)
+        # go to XML dir
+        # get xml file
+        # extract ID
+        # change name in XML
+        # write to JPC
+        # do git mv name new
+        # do git commit unless --no-commit -n
+        # do push if --push -p
+        # go to scripts directory
+        # do git mv name new
+        # do git commit unless --no-commit -n
+        # do push if --push -p
+        exit()
+
+    def do_rm(args, jpc):
+        print("rm not implemented")
+        exit()
+
+    def do_add(args, jpc):
+        print("add not implemented")
+        if args.filename:
+            print(args.filename)
+        exit()
 
     def main():
         Scripts.setup_logging()
         logger.info("Start")
         jpc = Jamf()
         # sanity check
-        jpc.xml_out = os.path.expanduser(xml_dir)
-        jpc.sh_out = os.path.expanduser(sh_dir)
-        if not os.path.isdir(jpc.xml_out):
-            print(f"directory {jpc.xml_out} does not exist")
+        jpc.xml_dir = os.path.expanduser(xml_dir)
+        jpc.sh_dir = os.path.expanduser(sh_dir)
+        if not os.path.isdir(jpc.xml_dir):
+            print(f"directory {jpc.xml_dir} does not exist")
             exit(1)
-        if not os.path.isdir(jpc.sh_out):
-            print(f"directory {jpc.sh_out} does not exist")
+        if not os.path.isdir(jpc.sh_dir):
+            print(f"directory {jpc.sh_dir} does not exist")
             exit(1)
         # get prefs
         plist = os.path.expanduser(prefs_file)
@@ -312,37 +336,18 @@ class Scripts:
 
         logger.debug("Prefs loaded")
 
-        parser = Scripts.command_parser()
+        parser = Parser()
         # handle no arguments on command line
         if len(argv) == 1:
             print("Missing subcommand")
-            parser.print_help()
-            exit()
-        args = parser.parse_args()
+            parser.parser.print_help()
+            exit(1)
+        args = parser.parser.parse_args()
         # we never return from below call
         if args:
             args.func(args, jpc)
         else:
-            exit
-
-        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
-        if ret.status_code != 200:
-            print("script list get failed: %s" % ret.status_code)
             exit()
-        for script in ret.json()["scripts"]:
-            idn = script["id"]
-            # name = script["name"]
-            # we want XML so don't set a header
-            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
-            if ret.status_code != 200:
-                print(f"script get failed: {ret.status_code} : {ret.url}")
-                exit()
-            xml = ret.text
-            root = ET.fromstring(xml)
-            text = root.findtext("script_contents")
-            if not text:
-                print("damn")
-            # print(text)
 
 
 if __name__ == "__main__":

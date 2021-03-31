@@ -12,15 +12,15 @@ The capability set out below is currently a wish list rather than a totally impl
 
 `scriptorium verify` compares the local scripts with the JPC and reports differences.
 
-`scriptorium out` pulls all scripts out of the server. It won't overwrite a script in local unless the --force option is specified. 
+`scriptorium down` downloads all scripts out of the server. It won't overwrite a script in local unless the --force option is specified. 
 
-`scriptorium in` does a git commit on the scripts folder. The pre-commit hook finds changed scripts in the scripts directory and copies them into the XML file and uploads the result to the JPC.  It then does a commit on the XML folder. You can specify `--push` to do an immediate push after the commit. `--message 'string'` sets the commit message to `string`. `--no-commit` stops the commit. If you don't set the commit message it will be a list of the scripts found to process.
+`scriptorium up` uploads all scripts to the server. By default it also does a git commit on the scripts folder. The pre-commit hook finds changed scripts in the scripts directory and copies them into the XML file and uploads the result to the JPC.  It then does a commit on the XML folder. You can specify `--push` to do an immediate push after the commit. `--message 'string'` sets the commit message to `string`. If you don't set the commit message it will be a list of the scripts found to process prepended by "Up: ".
 
-The `in` option allows you to edit a script in the scripts directory and have it automatically backed up to the git repo and uploaded to the JPC.
+The `up` option allows you to edit a script in the scripts directory and have it automatically backed up to the git repo and uploaded to the JPC. I am wavering over calling this 'commit' instead of up.
 
 ### Changing a file name
 
-If you want to change a file name, perhaps to increment a version number, then it has to be done with the `scriptorium change` command. This takes the old name and new name as arguments. This command does a `git mv` on both the script and the XML file. It does _not_ do a commit and it does _not_ change the file name on the JPC. To do both those things you can follow the change with a `scriptorium in`.
+If you want to change a file name, perhaps to increment a version number, then it has to be done with the `scriptorium change` command. This takes the old name and new name as arguments. This command does a `git mv` on both the script and the XML file. It does _not_ do a commit and it does _not_ change the file name on the JPC. To do both those things you can follow the change with a `scriptorium up`.
 
 ### Adding A Script
 
