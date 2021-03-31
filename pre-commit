@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# pre-commit
+# part of scriptorium
+# https://github.com/honestpuck/scriptorium
+
+__author__ = "Tony Williams"
+__email__ = "tonyw@honestpuck.com"
+__copyright__ = "Copyright (c) 2021 Tony Williams"
+__license__ = "MIT"
+__version__ = "0.8"
 
 from os import path
 import plistlib
@@ -7,23 +18,119 @@ import logging.handlers
 import requests
 import subprocess
 
-command=['git', 'diff', '--cached', '--name-only', '-z', 'HEAD']
+LOGLEVEL = logging.DEBUG
 
-complete=subprocess.run(command, text=True, capture_output=True)
-if complete.returncode != 0:
-	print("git diff failed")
-	print(complete.stderr)
-	exit(1)
+# where we stash the XML files
+xml_dir = "~/work/test/xml"
 
-if complete.stdout == '':
-	print("No files to commit")
-	exit(1)
+# where we stash the script files
+sh_dir = "~/work/test/scripts"
 
-files = complete.stdout.split('\0')
+# prefs file
+prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
-# the last itrm in the list will be a blank as the -z option above
-# ends every name with '\0' so split will do an empty item at the end
-for fn in files[:-1]:
-	print(f":{fn}")
 
-exit(1)
+class Jamf:
+    """ Exists to carry some variables for talking to JPC"""
+
+    def __init__(self):
+        self.scriptsURL = ""
+        self.auth = ""
+        self.hdrs = ""
+        self.xml_dir = ""
+        self.sh_dir = ""
+
+
+class Hook:
+    """ class for a git hook. In this case pre-commit """
+
+    def setup_logging():
+        """ Defines a nicely formatted logger """
+
+        LOGFILE = "/usr/local/var/log/%s.log" % "pre-scriptorium"
+        logger = logging.getLogger("pre-scriptorium")
+        ch = logging.handlers.TimedRotatingFileHandler(
+            LOGFILE, when="D", interval=1, backupCount=7
+        )
+        ch.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+        logger.addHandler(ch)
+        logger.setLevel(LOGLEVEL)
+        return logger
+
+    def main():
+        logger = Hook.setup_logging()
+        logger.info("Start")
+        command = ["git", "diff", "--cached", "--name-only", "-z", "HEAD"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            print("git diff failed")
+            logger.error("git diff failed")
+            # git diff prints a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            exit(1)
+        logger.debug("diff successful")
+        if complete.stdout == "":
+            print("No files to commit")
+            logger.info("No files to commit")
+            exit(1)
+        # we have work to do
+        files = complete.stdout.split("\0")
+        jpc = Jamf()
+        # sanity check
+        jpc.xml_out = path.expanduser(xml_dir)
+        jpc.sh_out = path.expanduser(sh_dir)
+        if not path.isdir(jpc.xml_out):
+            print(f"directory {jpc.xml_out} does not exist")
+            logger.debug(f"directory {jpc.xml_out} does not exist")
+            exit(1)
+        if not path.isdir(jpc.sh_out):
+            print(f"directory {jpc.sh_out} does not exist")
+            logger.debug(f"directory {jpc.sh_out} does not exist")
+            exit(1)
+        # get prefs
+        plist = path.expanduser(prefs_file)
+        fp = open(plist, "rb")
+        prefs = plistlib.load(fp)
+        # because we only operate on scripts create a URL for the endpoint
+        jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
+        # for the whole list JSON is handier so
+        jpc.hdrs = {"Accept": "application/json"}
+        jpc.auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])
+        logger.debug("Prefs loaded")
+        # the last item in the list will be blank as the -z option above
+        # ends every name with '\0' so split will do an empty item at the end
+        for fn in files[:-1]:
+            print(f"Processing {fn}")
+            logger.debug(f"Processing {fn}")
+            # first get our script
+            with open(f"{jpc.sh_out}/{fn}", "r") as fp:
+                scrpt = fp.read()
+            x_file = jpc.xml_out + "/" + fn
+            xml = ET.parse(x_file)
+            root = xml.getroot()
+            root.find("script_contents").text = scrpt
+            # blank the encoded field as you can't have both in an upload
+            root.find("script_contents_encoded").text = ""
+            idn = root.findtext("id")
+            data = ET.tostring(root)
+            url = f"{jpc.scriptsURL}/id/{idn}"
+            ret = requests.put(url, auth=jpc.auth, data=data)
+            if ret.status_code != 201:
+                print(f"failed to write to JPC: {ret.status_code}: {url}")
+                logger.debug(
+                    f"failed to write to JPC: {ret.status_code}: {url}"
+                )
+                exit(1)
+            xml.write(x_file)
+        exit()
+
+
+if __name__ == "__main__":
+    Hook.main()
