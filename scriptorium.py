@@ -283,10 +283,20 @@ class Scripts:
         """ do a git commit """
         """ this handles no commit or commit, and """
         """ optionally a push, on both directories """
+        """ it also does 'git add *' before each commit """
         if args.dont_commit:
             return
+        os.chdir(jpc.sh_dir)
         msg = args.message if args.message else " ".join(argv[1:])
-        command = ["git", "commit", "-a", "-m", msg]
+        command = ["git", "add", "*"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git add in scripts directory failed")
+        command = ["git", "commit", "-m", msg]
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
@@ -294,6 +304,7 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git commit in scripts directory failed")
+        info
         info(complete.stdout)
         if args.push:
             command = ["git", "push"]
@@ -306,21 +317,19 @@ class Scripts:
                 for i in lines[0:5]:
                     print(i)
                 raise ScriptError("git push in scripts directory failed")
-            info("Scripts Directory:")
-            print(complete.stdout)
-            logger.debug(complete.stdout)
-            os.chdir(jpc.xml_dir)
-            complete = subprocess.run(command, text=True, capture_output=True)
-            if complete.returncode != 0:
-                # git can print a heap so give our user
-                # just the first 5 lines
-                lines = complete.stderr.split("\n")
-                for i in lines[0:5]:
-                    print(i)
-                raise ScriptError("git push in XML directory failed")
-            info("XML Directory:")
-            print(complete.stdout)
-            logger.debug(complete.stdout)
+        os.chdir(jpc.xml_dir)
+        command = ["git", "add", "*"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git push in XML directory failed")
+        info("XML Directory:")
+        print(complete.stdout)
+        logger.debug(complete.stdout)
 
     def do_list(args, jpc):
         """ subcommand `list` """
