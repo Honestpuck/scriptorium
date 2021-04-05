@@ -120,6 +120,11 @@ class Parser:
             help="don't do a commit",
             action="store_true",
         )
+        parser_down.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
         parser_down.set_defaults(func=Scripts.do_down)
 
         #
