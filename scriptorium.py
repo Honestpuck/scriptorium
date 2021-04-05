@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 import logging.handlers
 import requests
 import subprocess
+import shlex
 
 LOGLEVEL = logging.DEBUG
 
@@ -88,125 +89,6 @@ class Parser:
         subparsers = parser.add_subparsers(description="", required=True)
 
         #
-        # create parser for `list`
-        #
-        parser_ls = subparsers.add_parser(
-            "list", help="lists all scripts on the server"
-        )
-        parser_ls.set_defaults(func=Scripts.do_list)
-
-        #
-        # create parser for `down`
-        #
-        parser_down = subparsers.add_parser(
-            "down", help="downloads all scripts out of the server"
-        )
-        parser_down.add_argument(
-            "-n",
-            "--no-force",
-            help="don't force overwrite of existing script or XML file",
-            action="store_true",
-        )
-        group = parser_down.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a git push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_down.add_argument(
-            "-m",
-            "--message",
-            help="set commit message",
-        )
-        parser_down.set_defaults(func=Scripts.do_down)
-
-        #
-        # create parser for 'up'
-        #
-        parser_up = subparsers.add_parser(
-            "up", help="add new or changed scripts and commit"
-        )
-        group = parser_up.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a git push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_up.add_argument(
-            "-m",
-            "--message",
-            help="set commit message",
-        )
-        parser_up.set_defaults(func=Scripts.do_up)
-
-        #
-        # create parser for `rename`
-        #
-        parser_re = subparsers.add_parser("rename", help="rename a script")
-        group = parser_re.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a git push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_re.add_argument(
-            "-m",
-            "--message",
-            help="set commit message",
-        )
-        parser_re.add_argument("src", help="current name of script")
-        parser_re.add_argument("dst", help="new name of script")
-        parser_re.set_defaults(func=Scripts.do_rename)
-
-        #
-        # create parser for `rm`
-        #
-        parser_rm = subparsers.add_parser(
-            "remove", help="remove (or delete) script from system"
-        )
-        parser_rm.add_argument("name", help="name of script to remove")
-        group = parser_rm.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a git push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_rm.add_argument(
-            "-m",
-            "--message",
-            help="set commit message",
-        )
-        parser_rm.set_defaults(func=Scripts.do_rm)
-
-        #
         # create parser for `add`
         #
         parser_add = subparsers.add_parser("add", help="add script to system")
@@ -248,10 +130,163 @@ class Parser:
             "-r", "--reboot", help="run script at reboot", action="store_true"
         )
         parser_add.add_argument(
-            "-z", "--zero", help="zero parameters for script"
+            "-z",
+            "--zero",
+            help="zero parameters for script",
+            action="store_true",
         )
         parser_add.set_defaults(func=Scripts.do_add)
         self.parser = parser
+
+        #
+        # create parser for `commit`
+        #
+        parser_commit = subparsers.add_parser("commit", help="git commit")
+        parser_commit.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        parser_commit.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_commit.set_defaults(func=Scripts.do_down)
+
+        #
+        # create parser for `down`
+        #
+        parser_down = subparsers.add_parser(
+            "down", help="downloads all scripts from the server"
+        )
+        parser_down.add_argument(
+            "-n",
+            "--no-force",
+            help="don't force overwrite of existing script or XML file",
+            action="store_true",
+        )
+        group = parser_down.add_mutually_exclusive_group()
+        group.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        group.add_argument(
+            "-d",
+            "--dont-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_down.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_down.set_defaults(func=Scripts.do_down)
+
+        #
+        # creeate parser for `git`
+        #
+        parser_git = subparsers.add_parser(
+            "git", help="asks for a string and runs it as a git command"
+        )
+        parser_git.set_defaults(func=Scripts.do_git)
+
+        #
+        # create parser for `list`
+        #
+        parser_ls = subparsers.add_parser(
+            "list", help="lists all scripts on the server"
+        )
+        parser_ls.set_defaults(func=Scripts.do_list)
+
+        #
+        # create parser for `push`
+        #
+        parser_push = subparsers.add_parser("push", help="git push")
+        parser_push.set_defaults(func=Scripts.do_push)
+
+        #
+        # create parser for 'up'
+        #
+        parser_up = subparsers.add_parser(
+            "up", help="upload and commit added and changed scripts"
+        )
+        group = parser_up.add_mutually_exclusive_group()
+        group.add_argument(
+            "-p",
+            "--push",
+            help="do a push after commit",
+            action="store_true",
+        )
+        group.add_argument(
+            "-d",
+            "--dont-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_up.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_up.set_defaults(func=Scripts.do_up)
+
+        #
+        # create parser for `rm`
+        #
+        parser_rm = subparsers.add_parser(
+            "remove", help="remove (or delete) script from system"
+        )
+        parser_rm.add_argument("name", help="name of script to remove")
+        group = parser_rm.add_mutually_exclusive_group()
+        group.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        group.add_argument(
+            "-d",
+            "--dont-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_rm.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_rm.set_defaults(func=Scripts.do_rem)
+
+        #
+        # create parser for `rename`
+        #
+        parser_re = subparsers.add_parser("rename", help="rename a script")
+        group = parser_re.add_mutually_exclusive_group()
+        group.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        group.add_argument(
+            "-d",
+            "--dont-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_re.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_re.add_argument("src", help="current name of script")
+        parser_re.add_argument("dst", help="new name of script")
+        parser_re.set_defaults(func=Scripts.do_rename)
 
 
 class ScriptError(Exception):
@@ -279,7 +314,43 @@ class Scripts:
         logger.addHandler(ch)
         logger.setLevel(LOGLEVEL)
 
-    def commit(args, jpc):
+    def do_add(args, jpc):
+        filename = args.filename if args.filename else input("Filename: ")
+        category = args.category if args.category else input("Category: ")
+        notes = args.notes if args.notes else input("Notes: ")
+        if not args.zero:
+            prompts = []
+            prompt = "a"
+            count = 4
+            while prompt:
+                prompt = input(f"Prompt {count}: ")
+                if prompt:
+                    prompts.append(prompt)
+                count += 1
+                if count > 11:
+                    break
+        root = ET.fromstring(template)
+        root.find("id").text = "0"
+        root.find("filename").text = filename
+        root.find("name").text = filename
+        root.find("category").text = category
+        root.find("script_contents").text = f"# {filename}"
+        root.find("notes").text = notes
+        params = root.find("parameters")
+        count = 4
+        for p in prompts:
+            ET.Subelement(params, f"parameter{count}").text = p
+        # we should now have a nice XML tree.
+        # the pickiest part of the process is the JPC PUT so -
+        data = ET.tostring(root)
+        url = f"{jpc.scriptsURL}/id/0"
+        ret = requests.put(url, auth=jpc.auth, data=data)
+        if ret.status_code != 201:
+            print(f"failed to write to JPC: {ret.status_code}: {url}")
+            logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
+            exit(1)
+
+    def do_commit(args, jpc):
         """ do a git commit """
         """ this handles no commit or commit, and """
         """ optionally a push, on both directories """
@@ -304,11 +375,11 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git commit in scripts directory failed")
-        info
+        info("Commit scripts:")
         info(complete.stdout)
+        info(complete.stderr)
         if args.push:
             command = ["git", "push"]
-            logger.info("pushing")
             complete = subprocess.run(command, text=True, capture_output=True)
             if complete.returncode != 0:
                 # git can print a heap so give our user
@@ -317,6 +388,10 @@ class Scripts:
                 for i in lines[0:5]:
                     print(i)
                 raise ScriptError("git push in scripts directory failed")
+            info("Push scripts:")
+            info(complete.stdout)
+            info(complete.stderr)
+        # xml dir
         os.chdir(jpc.xml_dir)
         command = ["git", "add", "*"]
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -326,24 +401,63 @@ class Scripts:
             lines = complete.stderr.split("\n")
             for i in lines[0:5]:
                 print(i)
-            raise ScriptError("git push in XML directory failed")
-        info("XML Directory:")
-        print(complete.stdout)
-        logger.debug(complete.stdout)
+            raise ScriptError("git add in XML directory failed")
+        command = ["git", "commit", "-m", msg]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git commit in scripts directory failed")
+        info("Commit scripts:")
+        info(complete.stdout)
+        info(complete.stderr)
+        if args.push:
+            command = ["git", "push"]
+            complete = subprocess.run(command, text=True, capture_output=True)
+            if complete.returncode != 0:
+                # git can print a heap so give our user
+                # just the first 5 lines
+                lines = complete.stderr.split("\n")
+                for i in lines[0:5]:
+                    print(i)
+                raise ScriptError("git push in XML directory failed")
+            info("Push scripts:")
+            info(complete.stdout)
+            info(complete.stderr)
 
-    def do_list(args, jpc):
-        """ subcommand `list` """
+        def do_down(args, jpc):
+            """ subcommand `down` """
 
-        logger.info("list command")
-        # JSON is easier to deal with so use the header
+        logger.info(" ".join(argv[1:]))
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
         if ret.status_code != 200:
             raise ScriptError(f"list get failed with error: {ret.status_code}")
         for script in ret.json()["scripts"]:
             idn = script["id"]
             name = script["name"]
-            print(f"{idn}:\t{name}")
-        logger.info("list succeeded")
+            # we want XML so don't use the header
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
+            if ret.status_code != 200:
+                raise ScriptError(
+                    f"script get failed: {ret.status_code} : {ret.url}"
+                )
+            xml = ret.text
+            root = ET.fromstring(xml)
+            text = root.findtext("script_contents")
+            xml_filepath = f"{jpc.xml_dir}/{name}"
+            sh_filepath = f"{jpc.sh_dir}/{name}"
+            if not args.no_force or not os.path.isfile(xml_filepath):
+                info(f"Writing XML {name}")
+                with open(xml_filepath, "w") as fp:
+                    fp.write(xml)
+            if not args.no_force or not os.path.isfile(sh_filepath):
+                info(f"Writing script {name}")
+                with open(sh_filepath, "w") as fp:
+                    fp.write(text)
+        Scripts.do_commit(args, jpc)
+        logger.info("down succeeded")
         exit()
 
     def do_down(args, jpc):
@@ -375,9 +489,57 @@ class Scripts:
                 info(f"Writing script {name}")
                 with open(sh_filepath, "w") as fp:
                     fp.write(text)
-        Scripts.commit(args, jpc)
+        Scripts.do_commit(args, jpc)
         logger.info("down succeeded")
         exit()
+
+    def do_git(args, jpc):
+        """ subcommand `git` """
+        print("git not implemented")
+        exit()
+
+    def do_list(args, jpc):
+        """ subcommand `list` """
+
+        logger.info("list command")
+        # JSON is easier to deal with so use the header
+        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
+        if ret.status_code != 200:
+            raise ScriptError(f"list get failed with error: {ret.status_code}")
+        for script in ret.json()["scripts"]:
+            idn = script["id"]
+            name = script["name"]
+            print(f"{idn}:\t{name}")
+        logger.info("list succeeded")
+        exit()
+
+    def do_push(args, jpc):
+        os.chdir(jpc.sh_dir)
+        command = ["git", "push"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git push in scripts directory failed")
+        info("Push scripts:")
+        info(complete.stdout)
+        info(complete.stderr)
+        os.chdir(jpc.xml_dir)
+        command = ["git", "push"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git push in scripts directory failed")
+        info("Push XML:")
+        info(complete.stdout)
+        info(complete.stderr)
 
     def do_up(args, jpc):
         """ subcommand `up` """
@@ -424,8 +586,48 @@ class Scripts:
                 )
                 exit(1)
             xml.write(x_file)
-        Scripts.commit(args, jpc)
+        Scripts.do_commit(args, jpc)
         logger.info("up scucceeded")
+        exit()
+
+    def do_rem(args, jpc):
+        """ subcommand `remove` """
+
+        logger.info(" ".join(argv[1:]))
+        # go to XML dir
+        os.chdir(jpc.xml_dir)
+        xml = ET.parse(args.name)
+        root = xml.getroot()
+        idn = root.findtext("id")
+        data = ET.tostring(root)
+        url = f"{jpc.scriptsURL}/id/{idn}"
+        ret = requests.delete(url, auth=jpc.auth, data=data)
+        if ret.status_code != 200:
+            raise ScriptError(
+                f"failed to write to JPC: {ret.status_code}: {url}"
+            )
+        command = ["git", "rm", args.name]
+        logger.info("git rm in XML directory")
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git rm in XML directory failed")
+        os.chdir(jpc.sh_dir)
+        logger.info("git rm in script directory")
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git mv in scripts directory failed")
+        Scripts.do_commit(args, jpc)
+        logger.info("remove succeeded")
         exit()
 
     def do_rename(args, jpc):
@@ -466,86 +668,9 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git mv in scripts directory failed")
-        Scripts.commit(args, jpc)
+        Scripts.do_commit(args, jpc)
         logger.info("remove succeeded")
         exit()
-
-    def do_rm(args, jpc):
-        """ subcommand `remove` """
-
-        logger.info(" ".join(argv[1:]))
-        # go to XML dir
-        os.chdir(jpc.xml_dir)
-        xml = ET.parse(args.name)
-        root = xml.getroot()
-        idn = root.findtext("id")
-        data = ET.tostring(root)
-        url = f"{jpc.scriptsURL}/id/{idn}"
-        ret = requests.delete(url, auth=jpc.auth, data=data)
-        if ret.status_code != 200:
-            raise ScriptError(
-                f"failed to write to JPC: {ret.status_code}: {url}"
-            )
-        command = ["git", "rm", args.name]
-        logger.info("git rm in XML directory")
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git rm in XML directory failed")
-        os.chdir(jpc.sh_dir)
-        logger.info("git rm in script directory")
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git mv in scripts directory failed")
-        Scripts.commit(args, jpc)
-        logger.info("remove succeeded")
-        exit()
-
-    def do_add(args, jpc):
-        filename = args.filename if args.filename else input("Filename: ")
-        category = args.category if args.category else input("Category: ")
-        notes = args.notes if args.notes else input("Notes: ")
-        if not args.zero:
-            prompts = []
-            prompt = "a"
-            count = 4
-            # still not handling 11 param max
-            while prompt:
-                prompt = input(f"Prompt {count}: ")
-                if prompt:
-                    prompts.append(prompt)
-                count += 1
-                if count > 11:
-                    break
-        root = ET.fromstring(template)
-        root.find("id").text = "0"
-        root.find("filename").text = filename
-        root.find("name").text = filename
-        root.find("category").text = category
-        root.find("script_contents").text = f"# {filename}"
-        root.find("notes").text = notes
-        params = root.find("parameters")
-        count = 4
-        for p in prompts:
-            ET.Subelement(params, f"parameter{count}").text = p
-        # we should now have a nice XML tree.
-        # the pickiest part of the process is the JPC PUT so -
-        data = ET.tostring(root)
-        url = f"{jpc.scriptsURL}/id/0"
-        ret = requests.put(url, auth=jpc.auth, data=data)
-        if ret.status_code != 201:
-            print(f"failed to write to JPC: {ret.status_code}: {url}")
-            logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
-            exit(1)
 
     def main():
         Scripts.setup_logging()
