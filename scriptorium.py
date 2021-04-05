@@ -25,6 +25,25 @@ import subprocess
 
 LOGLEVEL = logging.DEBUG
 
+# template for use by add
+template = """<?xml version="1.0" encoding="UTF-8"?>
+<script>
+<id></id>
+<name></name>
+<category></category>
+<filename></filename>
+<info/>
+<notes></notes>
+<priority></priority>
+<parameters/>
+<os_requirements/>
+<script_contents>
+</script_contents>
+<script_contents_encoded>
+</script_contents_encoded>
+</script>
+</xml>"""
+
 # where we stash the XML files
 xml_dir = "~/work/test/xml"
 
@@ -37,7 +56,7 @@ prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 LOGFILE = f"/usr/local/var/log/{__program__}.log"
 logger = logging.getLogger(__program__)
 
-
+# log and print routine
 def info(msg):
     print(msg)
     logger.info(msg)
@@ -96,8 +115,8 @@ class Parser:
             action="store_true",
         )
         group.add_argument(
-            "-n",
-            "--no-commit",
+            "-d",
+            "--dont-commit",
             help="don't do a commit",
             action="store_true",
         )
@@ -117,8 +136,8 @@ class Parser:
             action="store_true",
         )
         group.add_argument(
-            "-n",
-            "--no-commit",
+            "-d",
+            "--dont-commit",
             help="don't do a commit",
             action="store_true",
         )
@@ -129,7 +148,9 @@ class Parser:
         )
         parser_up.set_defaults(func=Scripts.do_up)
 
+        #
         # create parser for `rename`
+        #
         parser_re = subparsers.add_parser("rename", help="rename a script")
         group = parser_re.add_mutually_exclusive_group()
         group.add_argument(
@@ -139,12 +160,12 @@ class Parser:
             action="store_true",
         )
         group.add_argument(
-            "-n",
-            "--no-commit",
+            "-d",
+            "--dont-commit",
             help="don't do a commit",
             action="store_true",
         )
-        parser_up.add_argument(
+        parser_re.add_argument(
             "-m",
             "--message",
             help="set commit message",
@@ -153,7 +174,9 @@ class Parser:
         parser_re.add_argument("dst", help="new name of script")
         parser_re.set_defaults(func=Scripts.do_rename)
 
+        #
         # create parser for `rm`
+        #
         parser_rm = subparsers.add_parser(
             "remove", help="remove (or delete) script from system"
         )
@@ -166,42 +189,25 @@ class Parser:
             action="store_true",
         )
         group.add_argument(
-            "-n",
-            "--no-commit",
+            "-d",
+            "--dont-commit",
             help="don't do a commit",
             action="store_true",
         )
-        parser_up.add_argument(
+        parser_rm.add_argument(
             "-m",
             "--message",
             help="set commit message",
         )
         parser_rm.set_defaults(func=Scripts.do_rm)
 
+        #
         # create parser for `add`
+        #
         parser_add = subparsers.add_parser("add", help="add script to system")
         parser_add.add_argument("-f", "--filename", help="name of new script")
         parser_add.add_argument("-c", "--category", help="category of script")
         parser_add.add_argument("-n", "--notes", help="note about script")
-        group = parser_add.add_mutually_exclusive_group()
-        group.add_argument(
-            "-a",
-            "--after",
-            help="run script with priority 'after'",
-            action="store_true",
-        )
-        group.add_argument(
-            "-b",
-            "--before",
-            help="run script with priority 'before'",
-            action="store_true",
-        )
-        group.add_argument(
-            "-r", "--reboot", help="run script at reboot", action="store_true"
-        )
-        parser_add.add_argument(
-            "-z", "--zero", help="zero parameters for script"
-        )
         group = parser_add.add_mutually_exclusive_group()
         group.add_argument(
             "-p",
@@ -210,12 +216,36 @@ class Parser:
             action="store_true",
         )
         group.add_argument(
-            "-n",
-            "--no-commit",
+            "-d",
+            "--dont-commit",
             help="don't do a commit",
             action="store_true",
         )
- parser_add.set_defaults(func=Scripts.do_add)
+        parser_add.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        priority = parser_add.add_mutually_exclusive_group()
+        priority.add_argument(
+            "-a",
+            "--after",
+            help="run script with priority 'after'",
+            action="store_true",
+        )
+        priority.add_argument(
+            "-b",
+            "--before",
+            help="run script with priority 'before'",
+            action="store_true",
+        )
+        priority.add_argument(
+            "-r", "--reboot", help="run script at reboot", action="store_true"
+        )
+        parser_add.add_argument(
+            "-z", "--zero", help="zero parameters for script"
+        )
+        parser_add.set_defaults(func=Scripts.do_add)
         self.parser = parser
 
 
@@ -247,14 +277,11 @@ class Scripts:
     def commit(args, jpc):
         """ do a git commit """
         """ this handles no commit or commit, and """
-        """ optionally, a push on both directories """
-        if args.no_commit:
+        """ optionally a push, on both directories """
+        if args.dont_commit:
             return
-        msg = args.message if args.message else ' '.join(args[1:])
-        command = ["git", "commit", "-a", "-m", message]
-        # no-verify means no pre-commit hook
-        if no_verify:
-            command.append("-no-verify")
+        msg = args.message if args.message else " ".join(argv[1:])
+        command = ["git", "commit", "-a", "-m", msg]
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
@@ -292,6 +319,7 @@ class Scripts:
 
     def do_list(args, jpc):
         """ subcommand `list` """
+
         logger.info("list command")
         # JSON is easier to deal with so use the header
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
@@ -306,7 +334,8 @@ class Scripts:
 
     def do_down(args, jpc):
         """ subcommand `down` """
-        logger.info(' '.join(args[1:]))
+
+        logger.info(" ".join(argv[1:]))
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
         if ret.status_code != 200:
             raise ScriptError(f"list get failed with error: {ret.status_code}")
@@ -324,21 +353,24 @@ class Scripts:
             text = root.findtext("script_contents")
             xml_filepath = f"{jpc.xml_dir}/{name}"
             sh_filepath = f"{jpc.sh_dir}/{name}"
-            if args.force or not os.path.isfile(xml_filepath):
+            if not args.no_force or not os.path.isfile(xml_filepath):
                 info(f"Writing XML {name}")
                 with open(xml_filepath, "w") as fp:
                     fp.write(xml)
-            if args.force or not os.path.isfile(sh_filepath):
+            if not args.no_force or not os.path.isfile(sh_filepath):
                 info(f"Writing script {name}")
                 with open(sh_filepath, "w") as fp:
                     fp.write(text)
-        commit(args, jpc)
+        Scripts.commit(args, jpc)
+        logger.info("down succeeded")
         exit()
 
     def do_up(args, jpc):
-        logger.info(' '.join(args[1:]))
+        """ subcommand `up` """
+
+        logger.info(" ".join(argv[1:]))
         # first change to scripts directory
-        os.chdir(jpc.sh_out)
+        os.chdir(jpc.sh_dir)
         # then see if we do have scripts to be done
         command = ["git", "diff", "--name-only", "-z", "HEAD"]
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -353,11 +385,8 @@ class Scripts:
             exit(1)
         # we have work to do
         files = complete.stdout.split("\0")
-        lst = " ".join(files[:-1])
-        if not args.no_commit:
-            info(f"Processing {lst}")
-            msg = args.message if args.message else f"Up: {lst}"
-            Scripts.commit(args, jpc, msg)
+        lst = " ".join(files[:-1])  # last one is blank
+        info(f"Processing {lst}")
         for fn in lst:
             print(f"Processing {fn}")
             logger.debug(f"Processing {fn}")
@@ -381,25 +410,30 @@ class Scripts:
                 )
                 exit(1)
             xml.write(x_file)
-        commit(args, jpc, msg)
+        Scripts.commit(args, jpc)
+        logger.info("up scucceeded")
         exit()
 
     def do_rename(args, jpc):
-        logger.info(' '.join(args[1:]))
+        """ subcommand `rename` """
+
+        logger.info(" ".join(argv[1:]))
         # go to XML dir
         os.chdir(jpc.xml_dir)
         xml = ET.parse(args.src)
         root = xml.getroot()
-        idn = root.findtext('id')
-        root.find('name') = args.dst
-        root.find('script_contents_encoded') = ''
+        idn = root.findtext("id")
+        root.find("name").text = args.dst
+        root.find("script_contents_encoded").text = ""
         data = ET.tostring(root)
         url = f"{jpc.scriptsURL}/id/{idn}"
         ret = requests.put(url, auth=jpc.auth, data=data)
         if ret.status_code != 201:
-            raise ScriptError(f"failed to write to JPC: {ret.status_code}: {url}")
-        command = ['git', 'mv', src, dst]
-        logger.info("git mv in XML directory")
+            raise ScriptError(
+                f"failed to write to JPC: {ret.status_code}: {url}"
+            )
+        command = ["git", "mv", args.src, args.dst]
+        logger.info("git rm in XML directory")
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git can print a heap so give our user
@@ -407,11 +441,9 @@ class Scripts:
             lines = complete.stderr.split("\n")
             for i in lines[0:5]:
                 print(i)
-            raise ScriptError("git mv in XML directory failed")
-        if not args.no_commit
-            commit(args, jpc, ' '.join(command))
-        os.chdir(jpc.xml_dir)
-        logger.info("git mv in script directory")
+            raise ScriptError("git rm in XML directory failed")
+        os.chdir(jpc.sh_dir)
+        logger.info("git rm in script directory")
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git can print a heap so give our user
@@ -420,19 +452,86 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git mv in scripts directory failed")
-        if not args.no_commit
-            commit(args, jpc)
+        Scripts.commit(args, jpc)
+        logger.info("remove succeeded")
         exit()
 
     def do_rm(args, jpc):
-        print("rm not implemented")
+        """ subcommand `remove` """
+
+        logger.info(" ".join(argv[1:]))
+        # go to XML dir
+        os.chdir(jpc.xml_dir)
+        xml = ET.parse(args.name)
+        root = xml.getroot()
+        idn = root.findtext("id")
+        data = ET.tostring(root)
+        url = f"{jpc.scriptsURL}/id/{idn}"
+        ret = requests.delete(url, auth=jpc.auth, data=data)
+        if ret.status_code != 200:
+            raise ScriptError(
+                f"failed to write to JPC: {ret.status_code}: {url}"
+            )
+        command = ["git", "rm", args.name]
+        logger.info("git rm in XML directory")
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git rm in XML directory failed")
+        os.chdir(jpc.sh_dir)
+        logger.info("git rm in script directory")
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user
+            # just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git mv in scripts directory failed")
+        Scripts.commit(args, jpc)
+        logger.info("remove succeeded")
         exit()
 
     def do_add(args, jpc):
-        print("add not implemented")
-        if args.filename:
-            print(args.filename)
-        exit()
+        filename = args.filename if args.filename else input("Filename: ")
+        category = args.category if args.category else input("Category: ")
+        notes = args.notes if args.notes else input("Notes: ")
+        if not args.zero:
+            prompts = []
+            prompt = "a"
+            count = 4
+            # still not handling 11 param max
+            while prompt:
+                prompt = input(f"Prompt {count}: ")
+                if prompt:
+                    prompts.append(prompt)
+                count += 1
+                if count > 11:
+                    break
+        root = ET.fromstring(template)
+        root.find("id").text = "0"
+        root.find("filename").text = filename
+        root.find("name").text = filename
+        root.find("category").text = category
+        root.find("script_contents").text = f"# {filename}"
+        root.find("notes").text = notes
+        params = root.find("parameters")
+        count = 4
+        for p in prompts:
+            ET.Subelement(params, f"parameter{count}").text = p
+        # we should now have a nice XML tree.
+        # the pickiest part of the process is the JPC PUT so -
+        data = ET.tostring(root)
+        url = f"{jpc.scriptsURL}/id/0"
+        ret = requests.put(url, auth=jpc.auth, data=data)
+        if ret.status_code != 201:
+            print(f"failed to write to JPC: {ret.status_code}: {url}")
+            logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
+            exit(1)
 
     def main():
         Scripts.setup_logging()
@@ -442,25 +541,21 @@ class Scripts:
         jpc.xml_dir = os.path.expanduser(xml_dir)
         jpc.sh_dir = os.path.expanduser(sh_dir)
         if not os.path.isdir(jpc.xml_dir):
-            print(f"directory {jpc.xml_dir} does not exist")
-            exit(1)
+            raise ScriptError(f"directory {jpc.xml_dir} does not exist")
         if not os.path.isdir(jpc.sh_dir):
-            print(f"directory {jpc.sh_dir} does not exist")
-            exit(1)
+            raise ScriptError(f"directory {jpc.sh_dir} does not exist")
         # get prefs
         plist = os.path.expanduser(prefs_file)
         fp = open(plist, "rb")
         prefs = plistlib.load(fp)
-        # because we only operate on scripts create a URL for the endpoint
+        # we only operate on scripts so create a URL for the endpoint
         jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
         # for the whole list JSON is handier so
         jpc.hdrs = {"Accept": "application/json"}
         jpc.auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])
-
         logger.debug("Prefs loaded")
-
-        fred = Parser()
-        # handle no arguments on command line
+        fred = Parser()  # I just love Fred, he does all the dirty work
+        # handle no arguments on command line, fred doesn't do this well
         if len(argv) == 1:
             print("Missing subcommand")
             fred.parser.print_help()
