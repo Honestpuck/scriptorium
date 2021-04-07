@@ -23,6 +23,7 @@ import logging.handlers
 import requests
 import subprocess
 import shlex
+import difflib
 
 LOGLEVEL = logging.DEBUG
 
@@ -210,32 +211,6 @@ class Parser:
         parser_push.set_defaults(func=Scripts.do_push)
 
         #
-        # create parser for 'up'
-        #
-        parser_up = subparsers.add_parser(
-            "up", help="upload and commit added and changed scripts"
-        )
-        group = parser_up.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_up.add_argument(
-            "-m",
-            "--message",
-            help="set commit message",
-        )
-        parser_up.set_defaults(func=Scripts.do_up)
-
-        #
         # create parser for `rm`
         #
         parser_rm = subparsers.add_parser(
@@ -287,6 +262,43 @@ class Parser:
         parser_re.add_argument("src", help="current name of script")
         parser_re.add_argument("dst", help="new name of script")
         parser_re.set_defaults(func=Scripts.do_rename)
+
+        #
+        # create parser for 'up'
+        #
+        parser_up = subparsers.add_parser(
+            "up", help="upload and commit added and changed scripts"
+        )
+        group = parser_up.add_mutually_exclusive_group()
+        group.add_argument(
+            "-p",
+            "--push",
+            help="do a push after commit",
+            action="store_true",
+        )
+        group.add_argument(
+            "-d",
+            "--dont-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_up.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+        parser_up.set_defaults(func=Scripts.do_up)
+
+        #
+        # create parser for `verify`
+        #
+        parser_ver = subparsers.add_parser(
+            "verify", help="verify text against XML against Jamf server"
+        )
+        parser_ver.add_argument(
+            "-q", "--quick", help="Just check lists not actual text"
+        )
+        parser_ver.set_defaults(func=Scripts.do_verify)
 
 
 class ScriptError(Exception):
@@ -496,6 +508,32 @@ class Scripts:
     def do_git(args, jpc):
         """ subcommand `git` """
         print("git not implemented")
+        str = prompt("Command for git: ")
+        command = shlex.split(str, posix=False)
+        command.insert(0, "git")
+        logger.info(f"Git command: {command}")
+        os.chdir(jpc.sh_dir)
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError(f"scripts directory failed: {command}")
+        print("Scripts")
+        info(complete.stdout)
+        info(complete.stderr)
+        os.chdir(jpc.XML_dir)
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git can print a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError(f"XML directory failed: {command}")
+        print("XML")
+        info(complete.stdout)
+        info(complete.stderr)
         exit()
 
     def do_list(args, jpc):
@@ -540,55 +578,6 @@ class Scripts:
         info("Push XML:")
         info(complete.stdout)
         info(complete.stderr)
-
-    def do_up(args, jpc):
-        """ subcommand `up` """
-
-        logger.info(" ".join(argv[1:]))
-        # first change to scripts directory
-        os.chdir(jpc.sh_dir)
-        # then see if we do have scripts to be done
-        command = ["git", "diff", "--name-only", "-z", "HEAD"]
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git diff prints a heap so give our user just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git diff in scripts directory failed")
-        if complete.stdout == "":
-            raise ScriptError("No files to process")
-            exit(1)
-        # we have work to do
-        files = complete.stdout.split("\0")
-        lst = " ".join(files[:-1])  # last one is blank
-        info(f"Processing {lst}")
-        for fn in lst:
-            print(f"Processing {fn}")
-            logger.debug(f"Processing {fn}")
-            # first get our script
-            with open(f"{jpc.sh_out}/{fn}", "r") as fp:
-                scrpt = fp.read()
-            x_file = jpc.xml_out + "/" + fn
-            xml = ET.parse(x_file)
-            root = xml.getroot()
-            root.find("script_contents").text = scrpt
-            # blank the encoded field as you can't have both in an upload
-            root.find("script_contents_encoded").text = ""
-            idn = root.findtext("id")
-            data = ET.tostring(root)
-            url = f"{jpc.scriptsURL}/id/{idn}"
-            ret = requests.put(url, auth=jpc.auth, data=data)
-            if ret.status_code != 201:
-                print(f"failed to write to JPC: {ret.status_code}: {url}")
-                logger.debug(
-                    f"failed to write to JPC: {ret.status_code}: {url}"
-                )
-                exit(1)
-            xml.write(x_file)
-        Scripts.do_commit(args, jpc)
-        logger.info("up scucceeded")
-        exit()
 
     def do_rem(args, jpc):
         """ subcommand `remove` """
@@ -670,6 +659,127 @@ class Scripts:
             raise ScriptError("git mv in scripts directory failed")
         Scripts.do_commit(args, jpc)
         logger.info("remove succeeded")
+        exit()
+
+    def do_up(args, jpc):
+        """ subcommand `up` """
+
+        logger.info(" ".join(argv[1:]))
+        # first change to scripts directory
+        os.chdir(jpc.sh_dir)
+        # then see if we do have scripts to be done
+        command = ["git", "diff", "--name-only", "-z", "HEAD"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git diff prints a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git diff in scripts directory failed")
+        if complete.stdout == "":
+            raise ScriptError("No files to process")
+            exit(1)
+        # we have work to do
+        files = complete.stdout.split("\0")
+        lst = " ".join(files[:-1])  # last one is blank
+        info(f"Processing {lst}")
+        for fn in lst:
+            print(f"Processing {fn}")
+            logger.debug(f"Processing {fn}")
+            # first get our script
+            with open(f"{jpc.sh_out}/{fn}", "r") as fp:
+                scrpt = fp.read()
+            x_file = jpc.xml_out + "/" + fn
+            xml = ET.parse(x_file)
+            root = xml.getroot()
+            root.find("script_contents").text = scrpt
+            # blank the encoded field as you can't have both in an upload
+            root.find("script_contents_encoded").text = ""
+            idn = root.findtext("id")
+            data = ET.tostring(root)
+            url = f"{jpc.scriptsURL}/id/{idn}"
+            ret = requests.put(url, auth=jpc.auth, data=data)
+            if ret.status_code != 201:
+                print(f"failed to write to JPC: {ret.status_code}: {url}")
+                logger.debug(
+                    f"failed to write to JPC: {ret.status_code}: {url}"
+                )
+                exit(1)
+            xml.write(x_file)
+        Scripts.do_commit(args, jpc)
+        logger.info("up scucceeded")
+        exit()
+
+    def do_verify(args, jpc):
+        """ verify scripts, XML and server against each other """
+
+        # good for lists
+        d = difflib.Differ()
+
+        # get list of script files
+        command = ["ls"]
+        os.chdir(sh_dir)
+        complete = subprocess.run(command, text=True, capture_output=True)
+        sh = complete.stdout.splitlines
+        os.chdir(xml_dir)
+        complete = subprocess.run(command, text=True, capture_output=True)
+        xml = complete.stdout.splitlines
+        ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
+        if ret.status_code != 200:
+            raise ScriptError(f"list get failed with error: {ret.status_code}")
+        # scripts on server
+        scripts = []
+        for script in ret.json()["scripts"]:
+            idn = script["id"]
+            scripts.append(script["name"])
+        result = list(d.compare(xml, sh))
+        out = []
+        # print only changes
+        for line in result:
+            if line[0] != " ":
+                out.append(line)
+        if out:
+            print("XML > text")
+            for line in out:
+                print(line)
+        else:
+            print("XML = text")
+        result = list(d.compare(xml, scripts))
+        out = []
+        # print only changes
+        for line in result:
+            if line[0] != " ":
+                out.append(line)
+        if out:
+            print("XML > Jamf")
+            for line in out:
+                print(line)
+        else:
+            print("XML = Jamf")
+        if args.quick:
+            exit()
+        # now do text compare
+        # we still have the json in ret
+        for script in ret.json()["scripts"]:
+            idn = script["id"]
+            name = script["name"]
+            # we want XML so don't use the header
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
+            if ret.status_code != 200:
+                raise ScriptError(
+                    f"script get failed: {ret.status_code} : {ret.url}"
+                )
+            xml = ret.text
+            root = ET.fromstring(xml)
+            j_text = root.findtext("script_contents")
+            xml_filepath = f"{jpc.xml_dir}/{name}"
+            sh_filepath = f"{jpc.sh_dir}/{name}"
+            with open(xml_filepath, "r") as fp:
+                    x_text = fp.read()
+            with open(sh_filepath, "r") as fp:
+                    sh_text = fp.read()
+            if ret.text = x_text:
+                print("Jamf = XML")
         exit()
 
     def main():

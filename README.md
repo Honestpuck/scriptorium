@@ -1,8 +1,8 @@
 # scriptorium
 
-A utility for managing the scripts in Jamf Pro.
+A utility for managing the scripts in Jamf Pro. It provides backup, change tracking, and an easier edit process. 
 
-The system composes two git repos in two local directories and in your git store that should echo the scripts in your Jamf Pro server. One git repo stores the entire record from the server in XML format and the other stores the actual script as text. The script has the same name in all three spots.
+The system comprises two git repos in two local directories that should echo the scripts in your Jamf Pro server. One git repo stores the entire record from the server in XML format and the other stores the actual script as text. The script has the same name in all three spots.
 
 With the system installed you can make changes to the scripts in the text directory and use the tools in the system to keep the three in sync.
 
@@ -65,7 +65,7 @@ optional arguments:
                         set commit message
 ```
 
-If you've specified a number of changes with `--dont-commit` then you are going to want to perform a commit eventually. This does a `git add *` before the commit. If you don't specify a message it will be a list of files altered.
+If you've made a number of changes with `--dont-commit` then you are going to want to perform a commit eventually. This does a `git add *` before the commit. If you don't specify a message it will be a list of files altered.
 
 ### `down`
 
@@ -81,6 +81,8 @@ optional arguments:
                         set commit message
 ```
 
+This downloads all the scripts from the JPC server copying over the current contents 
+
 ### `git`
 
 ```
@@ -90,7 +92,7 @@ optional arguments:
   -h, --help  show this help message and exit
 ```
 
-The `git` command will ask for a string and run it as a git command in both directories. The string is split using a routine that will split the string into command "words" honouring any quoted strings and leaving the quote in the "word". An example, the entry 'this that "and that"' will split into `['this', 'that', '"and that"']`
+The `git` command will ask for a string and run it as a git command in both directories. The string is split using a routine that  splits the string into command "words" honouring any quoted strings and leaving the quote in the "word". An example, the entry 'this that "and that"' will split into `['this', 'that', '"and that"']`
 
 ### `list`
 
