@@ -25,6 +25,15 @@ import subprocess
 import shlex
 import difflib
 
+# where we stash the XML files
+xml_dir = "~/work/test/xml"
+
+# where we stash the script files
+sh_dir = "~/work/test/scripts"
+
+# prefs file
+prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
+
 LOGLEVEL = logging.DEBUG
 
 # template for use by add
@@ -45,15 +54,6 @@ template = """<?xml version="1.0" encoding="UTF-8"?>
 </script_contents_encoded>
 </script>
 </xml>"""
-
-# where we stash the XML files
-xml_dir = "~/work/test/xml"
-
-# where we stash the script files
-sh_dir = "~/work/test/scripts"
-
-# prefs file
-prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
 LOGFILE = f"/usr/local/var/log/{__program__}.log"
 logger = logging.getLogger(__program__)
@@ -775,11 +775,12 @@ class Scripts:
             xml_filepath = f"{jpc.xml_dir}/{name}"
             sh_filepath = f"{jpc.sh_dir}/{name}"
             with open(xml_filepath, "r") as fp:
-                    x_text = fp.read()
+                x_text = fp.read()
             with open(sh_filepath, "r") as fp:
-                    sh_text = fp.read()
-            if ret.text = x_text:
-                print("Jamf = XML")
+                sh_text = fp.read()
+            if ret.text != x_text:
+                if x_text != sh_text:
+
         exit()
 
     def main():

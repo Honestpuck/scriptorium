@@ -167,4 +167,11 @@ Uploads all changes and adds to the server. Behind scenes it does a `git diff` i
 
 ## Install
 
-First you will want to get the git bits working. Create the two repositories 
+First you will want to get the git bits working. Create the two empty repositories in your git store (such as github, though if you use github make them private).
+
+Now clone the two repos down to your Mac.
+
+Set the variables at the top of scriptorium to point to the two directories and the location of your prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
+
+Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
+
