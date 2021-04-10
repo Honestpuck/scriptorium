@@ -8,6 +8,8 @@ With the system installed you can make changes to the scripts in the text direct
 
 The basic structure is `scriptorium <command>` some with required parameters and command options. 
 
+_Note for testers: `add` and `verify` are both only partially written so avoid the, at the moment_
+
 ## Commands
 
 - `add`       used to add a script to the system.
@@ -167,7 +169,7 @@ Uploads all changes and adds to the server. Behind scenes it does a `git diff` i
 
 ## Install
 
-First you will want to get the git bits working. Create the two empty repositories in your git store (such as github, though if you use github make them private).
+First you will want to get the git bits working. Create the two empty repositories in your git store (such as Github, though if you use Github make them private).
 
 Now clone the two repos down to your Mac.
 
@@ -175,3 +177,14 @@ Set the variables at the top of scriptorium to point to the two directories and 
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
+The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and it will spring into existence in all three places.
+
+### Still to be done
+
+I'm working on a command `verify` that will verify various parts of the system. If you have any ideas on what to verify they would be greatly appreciated. At the moment I'm thinking `verify --config` verifies that the two git repos are on your Mac and scriptorium can open a connection to the Jamf server. I also have `--quick` which compares the list of scripts in each of the three spots and reports on any differences.
+
+Also on the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
+
+### Suggestions 
+
+Suggestions for changes or extensions are always appreciated.
