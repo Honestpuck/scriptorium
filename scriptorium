@@ -50,7 +50,7 @@ template = """<?xml version="1.0" encoding="UTF-8"?>
     <parameters/>
     <os_requirements/>
     <script_contents>#!/bin/bash
-</script_contents>
+    </script_contents>
     <script_contents_encoded></script_contents_encoded>
   </script>
 """
@@ -322,7 +322,7 @@ class Scripts:
         print("Scripts")
         info(complete.stdout)
         info(complete.stderr)
-        os.chdir(jpc.XML_dir)
+        os.chdir(jpc.xml_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
@@ -336,7 +336,6 @@ class Scripts:
 
     def do_add(args, jpc):
         filename = args.filename if args.filename else input("Filename: ")
-        category = args.category if args.category else input("Category: ")
         notes = args.notes if args.notes else input("Notes: ")
         if not args.zero:
             prompts = []
@@ -352,6 +351,11 @@ class Scripts:
         # build list of categories
         choices = []
         ret = requests.get(jpc.catURL, headers=jpc.hdrs, auth=jpc.auth)
+        if ret.status_code != 201:
+            print(f"failed to read categories: {ret.status_code}: {url}")
+            logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
+            print(ret.text)
+            exit(1)
         for category in ret.json()["categories"]:
             choices.append(category["name"])
         questions = [
@@ -371,16 +375,18 @@ class Scripts:
         root.find("script_contents").text = f"# {filename}"
         root.find("notes").text = notes
         params = root.find("parameters")
+        print(ET.tostring(root))
+        print(params)
         if not args.zero:
             count = 4
             for p in prompts:
-                ET.Subelement(params, f"parameter{count}").text = p
+                ET.SubElement(params, f"parameter{count}").text = p
                 count += 1
         # we should now have a nice XML tree.
         # the pickiest part of the process is the JPC POST so -
         data = ET.tostring(root)
         url = f"{jpc.scriptsURL}/id/0"
-        ret = requests.post(url, auth=jpc.auth, data=data)
+        # ret = requests.post(url, auth=jpc.auth, data=data)
         if ret.status_code != 201:
             print(f"failed to write to JPC: {ret.status_code}: {url}")
             logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
