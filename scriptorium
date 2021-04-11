@@ -24,6 +24,7 @@ import requests
 import subprocess
 import shlex
 import difflib
+import inquirer
 
 # where we stash the XML files
 xml_dir = "~/work/test/xml"
@@ -68,7 +69,8 @@ class Jamf:
     """ Exists to carry some variables"""
 
     def __init__(self):
-        self.scriptsURL = ""  # URL for accessing JPC scripts
+        self.scriptsURL = ""  # URL for JPC scripts
+        self.catURL = ""  # URL for JPC categories
         self.auth = ""  # name and password for JPC
         self.hdrs = ""  # header for requests, for JSON instead of XML
         self.xml_dir = ""
@@ -347,6 +349,20 @@ class Scripts:
                 count += 1
                 if count > 11:
                     break
+        # build list of categories
+        choices = []
+        ret = requests.get(jpc.catURL, headers=jpc.hdrs, auth=jpc.auth)
+        for category in ret.json()["categories"]:
+            choices.append(category["name"])
+        questions = [
+            inquirer.List(
+                "category",
+                message="Category (up and down to choose, return to select) ",
+                choices=choices,
+            )
+        ]
+        answer = inquirer.prompt(questions)
+        category = answer["category"]
         root = ET.fromstring(template)
         root.find("id").text = "0"
         root.find("filename").text = filename
@@ -361,7 +377,7 @@ class Scripts:
                 ET.Subelement(params, f"parameter{count}").text = p
                 count += 1
         # we should now have a nice XML tree.
-        # the pickiest part of the process is the JPC PUT so -
+        # the pickiest part of the process is the JPC POST so -
         data = ET.tostring(root)
         url = f"{jpc.scriptsURL}/id/0"
         ret = requests.post(url, auth=jpc.auth, data=data)
@@ -666,6 +682,7 @@ class Scripts:
         prefs = plistlib.load(fp)
         # we only operate on scripts so create a URL for the endpoint
         jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
+        jpc.catURL = f"{prefs['JSS_URL']}/JSSResource/categories"
         # for the whole list JSON is handier so
         jpc.hdrs = {"Accept": "application/json"}
         jpc.auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])

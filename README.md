@@ -8,7 +8,7 @@ With the system installed you can make changes to the scripts in the text direct
 
 The basic structure is `scriptorium <command>` some with required parameters and command options. 
 
-_Note for testers: `add` and `verify` are both only partially written so avoid the, at the moment_
+_Note for testers: `add` and `verify` are both only partially written so avoid them at the moment_
 
 ## Commands
 
@@ -19,15 +19,16 @@ _Note for testers: `add` and `verify` are both only partially written so avoid t
 - `list`      lists all scripts on the JP server
 - `push`      `git push` in both directories
 - `remove`    remove a script in all three spots
-- `rename`    rename a script in all scripts
-- `up`        Uploads all changes and additions to the server
+- `rename`    rename a script in all three spots
+- `up`        uploads all changes and additions to the server
+- `verify`    verify text against XML against Jamf server
 
 ## Command Descriptions
 
 ### `add`
 
 ```
-usage: scriptorium.py add [-h] [-f FILENAME] [-c CATEGORY] [-n NOTES] [-p | -d] [-m MESSAGE] [-a | -b | -r] [-z]
+usage: scriptorium add [-h] [-f FILENAME] [-c CATEGORY] [-n NOTES] [-p | -d] [-m MESSAGE] [-a | -b | -r] [-z]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -58,7 +59,7 @@ If you allow a commit and don't specify a commit message it will be the name of 
 ### `commit`
 
 ```
-usage: scriptorium.py commit [-h] [-p] [-m MESSAGE]
+usage: scriptorium commit [-h] [-p] [-m MESSAGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -72,7 +73,7 @@ If you've made a number of changes with `--dont-commit` then you are going to wa
 ### `down`
 
 ```
-usage: scriptorium.py down [-h] [-n] [-p | -d] [-m MESSAGE]
+usage: scriptorium down [-h] [-n] [-p | -d] [-m MESSAGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -88,7 +89,7 @@ This downloads all the scripts from the JPC server copying over the current cont
 ### `git`
 
 ```
-usage: scriptorium.py git [-h]
+usage: scriptorium git [-h]
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -99,7 +100,7 @@ The `git` command will ask for a string and run it as a git command in both dire
 ### `list`
 
 ```
-usage: scriptorium.py list [-h]
+usage: scriptorium list [-h]
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -110,7 +111,7 @@ It's simple, no arguments. Just lists the scripts on the server
 ### `push`
 
 ```
-usage: scriptorium.py push [-h]
+usage: scriptorium push [-h]
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -121,7 +122,7 @@ If you make a number of commits without a `--push` then you will need to do it e
 ### `remove`
 
 ```
-usage: scriptorium.py remove [-h] [-p | -d] [-m MESSAGE] name
+usage: scriptorium remove [-h] [-p | -d] [-m MESSAGE] name
 
 positional arguments:
   name                  name of script to remove
@@ -139,10 +140,11 @@ Removes a script from all three spots.
 ### `rename`
 
 ```
-usage: scriptorium.py remove [-h] [-p | -d] [-m MESSAGE] name
+usage: scriptorium rename [-h] [-p | -d] [-m MESSAGE] src dst
 
 positional arguments:
-  name                  name of script to remove
+  src                   current name of script
+  dst                   new name of script
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -155,7 +157,7 @@ optional arguments:
 ### `up`
 
 ```
-usage: scriptorium.py up [-h] [-p | -d] [-m MESSAGE]
+usage: scriptorium up [-h] [-p | -d] [-m MESSAGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -169,11 +171,13 @@ Uploads all changes and adds to the server. Behind scenes it does a `git diff` i
 
 ## Install
 
-First you will want to get the git bits working. Create the two empty repositories in your git store (such as Github, though if you use Github make them private).
+`scriptorium` requires the `requests` and `inquirer` libraries. Make sure they are installed.
+
+Then you will want to get the git bits working. Create the two empty repositories in your git store (such as Github, though if you use Github make them private).
 
 Now clone the two repos down to your Mac.
 
-Set the variables at the top of scriptorium to point to the two directories and the location of your prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
+Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
