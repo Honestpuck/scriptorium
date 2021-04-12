@@ -321,7 +321,7 @@ class Scripts:
             raise ScriptError(f"scripts directory failed: {command}")
         if complete.stderr:
             print("Scripts")
-            print(' '.join(command)')
+            print(" ".join(command))
             info(complete.stderr)
         os.chdir(jpc.xml_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -333,7 +333,7 @@ class Scripts:
             raise ScriptError(f"XML directory failed: {command}")
         if complete.stderr:
             print("XML")
-            print(' '.join(command)')
+            print(" ".join(command))
             info(complete.stderr)
 
     def do_add(args, jpc):
@@ -424,7 +424,6 @@ class Scripts:
         msg = args.message if args.message else " ".join(argv[1:])
         command = ["git", "commit", "-m", msg]
         Scripts.both_repos(args, jpc, command)
-        exit()
 
     def do_down(args, jpc):
         """ subcommand `down` """
@@ -497,7 +496,6 @@ class Scripts:
                 print(i)
             raise ScriptError("git push in scripts directory failed")
         info("Push scripts:")
-        info(complete.stdout)
         info(complete.stderr)
         os.chdir(jpc.xml_dir)
         command = ["git", "push"]
@@ -510,7 +508,6 @@ class Scripts:
                 print(i)
             raise ScriptError("git push in scripts directory failed")
         info("Push XML:")
-        info(complete.stdout)
         info(complete.stderr)
 
     def do_rem(args, jpc):
