@@ -148,7 +148,7 @@ class Parser:
             "--message",
             help="set commit message",
         )
-        parser_commit.set_defaults(func=Scripts.do_down)
+        parser_commit.set_defaults(func=Scripts.do_commit)
 
         #
         # create parser for `down`
@@ -319,9 +319,10 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError(f"scripts directory failed: {command}")
-        print("Scripts")
-        info(complete.stdout)
-        info(complete.stderr)
+        if complete.stderr:
+            print("Scripts")
+            print(' '.join(command)')
+            info(complete.stderr)
         os.chdir(jpc.xml_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
@@ -330,9 +331,10 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError(f"XML directory failed: {command}")
-        print("XML")
-        info(complete.stdout)
-        info(complete.stderr)
+        if complete.stderr:
+            print("XML")
+            print(' '.join(command)')
+            info(complete.stderr)
 
     def do_add(args, jpc):
         filename = args.filename if args.filename else input("Filename: ")
@@ -385,7 +387,6 @@ class Scripts:
                 ET.SubElement(params, f"parameter{count}").text = p
                 count += 1
         # we should now have a nice XML tree.
-        # the pickiest part of the process is the JPC POST so -
         data = ET.tostring(root)
         url = f"{jpc.scriptsURL}/id/0"
         ret = requests.post(url, auth=jpc.auth, data=data)
@@ -397,19 +398,27 @@ class Scripts:
                 f"failed to write to JPC: {ret.status_code}: {jpc.scriptsURL}"
             )
             exit(1)
+        root = ET.fromstring(ret.text)
+        idn = root.find("id").text
+        ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
+        if ret.status_code != 200:
+            raise ScriptError(
+                f"script get failed: {ret.status_code} : {ret.url}"
+            )
+        xml = ret.text
         xml_filepath = f"{jpc.xml_dir}/{filename}"
         sh_filepath = f"{jpc.sh_dir}/{filename}"
         with open(xml_filepath, "w") as fp:
-            fp.write(str(data))
+            fp.write(xml)
         with open(sh_filepath, "w") as fp:
             fp.write(f"# {filename}")
+        if args.dont_commit:
+            exit()
+        Scripts.do_commit(args, jpc)
 
     def do_commit(args, jpc):
         """ do a git commit """
-        """ this handles no commit or commit, and """
-        """ optionally a push, on both directories """
-        if args.dont_commit:
-            return
+        """ this commit, and optionally a push, on both directories """
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else " ".join(argv[1:])
@@ -446,8 +455,9 @@ class Scripts:
                 info(f"Writing script {name}")
                 with open(sh_filepath, "w") as fp:
                     fp.write(text)
+        if args.dont_commit:
+            exit()
         Scripts.do_commit(args, jpc)
-        logger.info("down succeeded")
         exit()
 
     def do_git(args, jpc):
@@ -539,8 +549,9 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git mv in scripts directory failed")
+        if args.dont_commit:
+            exit()
         Scripts.do_commit(args, jpc)
-        logger.info("remove succeeded")
         exit()
 
     def do_rename(args, jpc):
@@ -581,6 +592,8 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git mv in scripts directory failed")
+        if args.dont_commit:
+            exit()
         Scripts.do_commit(args, jpc)
         logger.info("remove succeeded")
         exit()
@@ -630,6 +643,8 @@ class Scripts:
                 )
                 exit(1)
             xml.write(x_file)
+        if args.dont_commit:
+            exit()
         Scripts.do_commit(args, jpc)
         logger.info("up scucceeded")
         exit()
