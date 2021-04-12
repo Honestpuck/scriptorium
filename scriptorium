@@ -309,7 +309,7 @@ class Scripts:
         logger.addHandler(ch)
         logger.setLevel(LOGLEVEL)
 
-    def do_both(args, jpc, command):
+    def both_repos(args, jpc, command):
         """ do a shell command in each of our two directories """
         os.chdir(jpc.sh_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -351,9 +351,13 @@ class Scripts:
         # build list of categories
         choices = []
         ret = requests.get(jpc.catURL, headers=jpc.hdrs, auth=jpc.auth)
-        if ret.status_code != 201:
-            print(f"failed to read categories: {ret.status_code}: {url}")
-            logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
+        if ret.status_code != 200:
+            print(
+                f"failed to read categories: {ret.status_code}: {jpc.catURL}"
+            )
+            logger.debug(
+                f"failed to write to JPC: {ret.status_code}: {jpc.catURL}"
+            )
             print(ret.text)
             exit(1)
         for category in ret.json()["categories"]:
@@ -375,8 +379,6 @@ class Scripts:
         root.find("script_contents").text = f"# {filename}"
         root.find("notes").text = notes
         params = root.find("parameters")
-        print(ET.tostring(root))
-        print(params)
         if not args.zero:
             count = 4
             for p in prompts:
@@ -386,25 +388,33 @@ class Scripts:
         # the pickiest part of the process is the JPC POST so -
         data = ET.tostring(root)
         url = f"{jpc.scriptsURL}/id/0"
-        # ret = requests.post(url, auth=jpc.auth, data=data)
+        ret = requests.post(url, auth=jpc.auth, data=data)
         if ret.status_code != 201:
-            print(f"failed to write to JPC: {ret.status_code}: {url}")
-            logger.debug(f"failed to write to JPC: {ret.status_code}: {url}")
-            print(ret.text)
+            print(
+                f"failed to write to JPC: {ret.status_code}: {jpc.scriptsURL}"
+            )
+            logger.debug(
+                f"failed to write to JPC: {ret.status_code}: {jpc.scriptsURL}"
+            )
             exit(1)
+        xml_filepath = f"{jpc.xml_dir}/{filename}"
+        sh_filepath = f"{jpc.sh_dir}/{filename}"
+        with open(xml_filepath, "w") as fp:
+            fp.write(str(data))
+        with open(sh_filepath, "w") as fp:
+            fp.write(f"# {filename}")
 
     def do_commit(args, jpc):
         """ do a git commit """
         """ this handles no commit or commit, and """
         """ optionally a push, on both directories """
-        """ it also does 'git add *' before each commit """
         if args.dont_commit:
             return
         command = ["git", "add", "*"]
-        Scripts.do_both(args, jpc, command)
+        Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else " ".join(argv[1:])
         command = ["git", "commit", "-m", msg]
-        Scripts.do_both(args, jpc, command)
+        Scripts.both_repos(args, jpc, command)
         exit()
 
     def do_down(args, jpc):
@@ -447,7 +457,7 @@ class Scripts:
         command = shlex.split(str, posix=False)
         command.insert(0, "git")
         logger.info(f"Git command: {command}")
-        Scripts.do_both(args, jpc, command)
+        Scripts.both_repos(args, jpc, command)
         exit()
 
     def do_list(args, jpc):
