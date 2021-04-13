@@ -274,9 +274,9 @@ class Parser:
             "verify", help="verify text against XML against Jamf server"
         )
         parser_ver.add_argument(
-            "-c",
-            "--config",
-            help="verify correct configuration of scriptorium",
+            "-d",
+            "--diff",
+            help="print diff when checking every script",
         )
         parser_ver.add_argument(
             "-q", "--quick", help="Just check lists not actual text"
@@ -692,6 +692,44 @@ class Scripts:
             print("XML = Jamf")
         if args.quick:
             exit()
+        for script in ret.json()["scripts"]:
+            name = script["name"]
+            idn = script["id"]
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
+            if ret.status_code != 200:
+                raise ScriptError(
+                    f"get script {name} failed with error: {ret.status_code}"
+                )
+            jpc = ret.text
+            xml_filepath = f"{jpc.xml_dir}/{name}"
+            sh_filepath = f"{jpc.sh_dir}/{name}"
+            with open(xml_filepath, "r") as fp:
+                xml = fp.read()
+            with open(sh_filepath, "r") as fp:
+                text = fp.read()
+            result = list(d.compare(xml, sh))
+            out = []
+            # print only changes
+            for line in result:
+                if line[0] != " ":
+                    out.append(line)
+            if out:
+                print(f"{name}: XML > text")
+                if args.diff:
+                    for line in out:
+                        print(line)
+            result = list(d.compare(xml, scripts))
+            out = []
+            # print only changes
+            for line in result:
+                if line[0] != " ":
+                    out.append(line)
+            if out:
+                print(f"{name}: XML > Jamf")
+                if args.diff:
+                    for line in out:
+                        print(line)
+        exit()
 
     def main():
         Scripts.setup_logging()
