@@ -279,7 +279,10 @@ class Parser:
             help="print diff when checking every script",
         )
         parser_ver.add_argument(
-            "-q", "--quick", help="Just check lists not actual text"
+            "-q",
+            "--quick",
+            help="Just check lists not actual text",
+            action="store_true",
         )
         parser_ver.set_defaults(func=Scripts.do_verify)
 

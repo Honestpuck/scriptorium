@@ -167,7 +167,11 @@ optional arguments:
                         set commit message
 ```
 
-Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them.
+Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them. You want to do this before a push.
+
+### `verify`
+
+Verify does a compare of the two directories and the server. The quick option just lists the files in each location and compares the lists. If they are different it prints a diff. If you don't specify `--quick` then the actual text is compared. The normal form just prints a short message if they differ. With `--diff` a diff is printed, this can quickly become quite large.
 
 ## Install
 
@@ -185,9 +189,9 @@ The other important command is `add`. So that you can keep everything in sync wh
 
 ### Still to be done
 
-I'm working on a command `verify` that will verify various parts of the system. If you have any ideas on what to verify they would be greatly appreciated. At the moment I'm thinking `verify --config` verifies that the two git repos are on your Mac and scriptorium can open a connection to the Jamf server. I also have `--quick` which compares the list of scripts in each of the three spots and reports on any differences.
+On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
 
-Also on the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
+Some notes on best practices and work methods should also appear at some point. Contributions to these would be greatly appreciated.
 
 ### Suggestions 
 
