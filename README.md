@@ -8,7 +8,8 @@ With the system installed you can make changes to the scripts in the text direct
 
 The basic structure is `scriptorium <command>` some with required parameters and command options. 
 
-_Note for testers: At the moment this is fairly well tested. I'm not quite using it in production, YMMV._
+_Note for testers: At the moment this is fairly well tested, apart from `verify`._
+_`verify --quick` is working but not the rest of `verify`. I'm not quite using this script in production, YMMV._
 
 ## Commands
 
@@ -189,7 +190,7 @@ The other important command is `add`. So that you can keep everything in sync wh
 
 ### Still to be done
 
-On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
+On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters. I'm also going to add a `--command COMMAND` option to `git` so you can do it all from the command line without prompts.
 
 Some notes on best practices and work methods should also appear at some point. Contributions to these would be greatly appreciated.
 

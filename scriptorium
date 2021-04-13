@@ -656,12 +656,12 @@ class Scripts:
         d = difflib.Differ()
         # get list of script files
         command = ["ls"]
-        os.chdir(sh_dir)
+        os.chdir(jpc.sh_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
-        sh = complete.stdout.splitlines
-        os.chdir(xml_dir)
+        sh = complete.stdout.splitlines()
+        os.chdir(jpc.xml_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
-        xml = complete.stdout.splitlines
+        xml = complete.stdout.splitlines()
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
         if ret.status_code != 200:
             raise ScriptError(f"list get failed with error: {ret.status_code}")
@@ -669,6 +669,7 @@ class Scripts:
         scripts = []
         for script in ret.json()["scripts"]:
             scripts.append(script["name"])
+        # first compare
         result = list(d.compare(xml, sh))
         out = []
         # print only changes
@@ -681,6 +682,10 @@ class Scripts:
                 print(line)
         else:
             print("XML = text")
+        # it's likely that the OS sort of an `ls` will be different
+        # to the Jamf Pro server sort so use the Python sort on both
+        xml.sort()
+        scripts.sort()
         result = list(d.compare(xml, scripts))
         out = []
         # print only changes
@@ -703,14 +708,17 @@ class Scripts:
                 raise ScriptError(
                     f"get script {name} failed with error: {ret.status_code}"
                 )
-            jpc = ret.text
+            server = ret.text.splitlines()
             xml_filepath = f"{jpc.xml_dir}/{name}"
             sh_filepath = f"{jpc.sh_dir}/{name}"
             with open(xml_filepath, "r") as fp:
                 xml = fp.read()
+            root = ET.fromstring(xml)
+            text = root.findtext("script_contents")
+            x_text = text.splitlines()
             with open(sh_filepath, "r") as fp:
-                text = fp.read()
-            result = list(d.compare(xml, sh))
+                text = fp.readlines()
+            result = list(d.compare(x_text, text))
             out = []
             # print only changes
             for line in result:
@@ -721,7 +729,7 @@ class Scripts:
                 if args.diff:
                     for line in out:
                         print(line)
-            result = list(d.compare(xml, scripts))
+            result = list(d.compare(xml, server))
             out = []
             # print only changes
             for line in result:
