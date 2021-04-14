@@ -15,7 +15,7 @@ __license__ = "MIT"
 __version__ = "0.8"
 
 import os
-from sys import argv, stderr
+from sys import argv, stderr, stdout
 import argparse
 import plistlib
 import xml.etree.ElementTree as ET
@@ -277,12 +277,16 @@ class Parser:
             "-d",
             "--diff",
             help="print diff when checking every script",
+            action="store_true",
         )
         parser_ver.add_argument(
             "-q",
             "--quick",
             help="Just check lists not actual text",
             action="store_true",
+        )
+        parser_ver.add_argument(
+            "-s", "--script", help="specify a single script to check"
         )
         parser_ver.set_defaults(func=Scripts.do_verify)
 
@@ -655,6 +659,7 @@ class Scripts:
         # good for lists
         d = difflib.Differ()
         # get list of script files
+        print("Lists:")
         command = ["ls"]
         os.chdir(jpc.sh_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -702,22 +707,27 @@ class Scripts:
             exit()
         for script in ret.json()["scripts"]:
             name = script["name"]
+            if args.script and name != args.script:
+                continue
+            print("*", end="")
+            stdout.flush()
             idn = script["id"]
             ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
             if ret.status_code != 200:
                 raise ScriptError(
                     f"get script {name} failed with error: {ret.status_code}"
                 )
-            server = ret.text.splitlines()
+            server = ret.text.splitlines(keepends=True)
             xml_filepath = f"{jpc.xml_dir}/{name}"
             sh_filepath = f"{jpc.sh_dir}/{name}"
             with open(xml_filepath, "r") as fp:
                 xml = fp.read()
             root = ET.fromstring(xml)
             text = root.findtext("script_contents")
-            x_text = text.splitlines()
+            x_text = text.splitlines(keepends=True)
             with open(sh_filepath, "r") as fp:
-                text = fp.readlines()
+                tt = fp.read()
+            text = tt.splitlines(keepends=True)
             result = list(d.compare(x_text, text))
             out = []
             # print only changes
@@ -725,10 +735,13 @@ class Scripts:
                 if line[0] != " ":
                     out.append(line)
             if out:
-                print(f"{name}: XML > text")
+                print(f"\n{name}: XML > text")
                 if args.diff:
                     for line in out:
                         print(line)
+            elif args.script:
+                print(f"\n{name}: XML = text")
+            xml = xml.splitlines(keepends=True)
             result = list(d.compare(xml, server))
             out = []
             # print only changes
@@ -736,10 +749,12 @@ class Scripts:
                 if line[0] != " ":
                     out.append(line)
             if out:
-                print(f"{name}: XML > Jamf")
+                print(f"\n{name}: XML > Jamf")
                 if args.diff:
                     for line in out:
                         print(line)
+            elif args.script:
+                print(f"\n{name}: XML = Jamf")
         exit()
 
     def main():
