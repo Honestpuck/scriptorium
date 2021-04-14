@@ -187,7 +187,11 @@ Now run `scriptorium down` and all the scripts will be populated on your Mac. Wh
 
 The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and it will spring into existence in all three places.
 
-### Work Practices
+### Work practices
+
+The remove, rename and up commands do a commit by default at the moment. The problem in doing a commit is that the up command relies on changed files not being committed until after up.
+
+The best way of solving this dilemma would be for all commits to be preceded by an up command within scriptorium. Since remove, rename and add already modify the server this problem is only triggered when you edit a script so this seems acceptable and has been implemented.
 
 ### Still to be done
 

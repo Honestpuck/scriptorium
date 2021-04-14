@@ -162,20 +162,6 @@ class Parser:
             help="don't force overwrite of existing script or XML file",
             action="store_true",
         )
-        group = parser_down.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a git push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_down.add_argument("-m", "--message", help="set commit message")
         parser_down.set_defaults(func=Scripts.do_down)
 
         #
@@ -251,20 +237,6 @@ class Parser:
         parser_up = subparsers.add_parser(
             "up", help="upload and commit added and changed scripts"
         )
-        group = parser_up.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_up.add_argument("-m", "--message", help="set commit message")
         parser_up.set_defaults(func=Scripts.do_up)
 
         #
@@ -461,9 +433,6 @@ class Scripts:
                 info(f"Writing script {name}")
                 with open(sh_filepath, "w") as fp:
                     fp.write(text)
-        if args.dont_commit:
-            exit()
-        Scripts.do_commit(args, jpc)
         exit()
 
     def do_git(args, jpc):
@@ -531,7 +500,7 @@ class Scripts:
         ret = requests.delete(url, auth=jpc.auth, data=data)
         if ret.status_code != 200:
             raise ScriptError(
-                f"failed to write to JPC: {ret.status_code}: {url}"
+                f"failed to delete to JPC: {ret.status_code}: {url}"
             )
         command = ["git", "rm", args.name]
         logger.info("git rm in XML directory")
@@ -647,10 +616,6 @@ class Scripts:
                 )
                 exit(1)
             xml.write(x_file)
-        if args.dont_commit:
-            exit()
-        Scripts.do_commit(args, jpc)
-        logger.info("up scucceeded")
         exit()
 
     def do_verify(args, jpc):
