@@ -398,6 +398,7 @@ class Scripts:
     def do_commit(args, jpc):
         """ do a git commit """
         """ this commit, and optionally a push, on both directories """
+        do_up(args, jpc)
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else " ".join(argv[1:])
