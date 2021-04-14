@@ -1,0 +1,179 @@
+# bash completion for scriptorium
+
+# see https://github.com/Honestpuck/apple_complete
+# for how to install in bash and zsh
+
+__scriptoriumcomp_words_include() {
+  local i=1
+  while [[ "$i" -lt "$COMP_CWORD" ]]
+  do
+    if [[ "${COMP_WORDS[i]}" = "$1" ]]
+    then
+      return 0
+    fi
+    i="$((++i))"
+  done
+  return 1
+}
+
+__scriptoriumcomp() {
+  # break $1 on space, tab, and newline characters,
+  # and turn it into a newline separated list of words
+  local list s sep=$'\n' IFS=$' '$'\t'$'\n'
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+
+  for s in $1
+  do
+    __autopkgcomp_words_include "$s" && continue
+    list="$list$s$sep"
+  done
+
+  IFS="$sep"
+  COMPREPLY=($(compgen -W "$list" -- "$cur"))
+}
+
+_scriptoriumcomp_scripts() {
+  # build a list of scripts
+  local scripts="$(ls ~/work/test/XML)"
+  COMPREPLY=($(compgen -W "$scripts" -- "$cur"))
+}
+
+# one function for each scriptorium command
+
+_scriptorium_add() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*) __scriptoriumcomp "--help --after --before --category --dont-commit \
+            --filename --message --notes --push --reboot --zero"
+      return
+      ;;
+  esac   
+}
+
+_scriptorium_commit() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*) __scriptoriumcomp "--help --push --message"
+      return
+      ;;
+  esac   
+}
+
+_scriptorium_down() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*) __scriptoriumcomp "--help --no-force"
+            return
+            ;;
+        '"'*) 
+    esac   
+}
+
+_scriptorium_git() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*)
+        __scriptoriumcomp "--help --command"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_list() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*)
+        __scriptoriumcomp "--help"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_git() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*)
+        __scriptoriumcomp "--help --command"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_push() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*)
+        __scriptoriumcomp "--help"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_remove() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*) __scriptoriumcomp "--help --dont-commit --message --push"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_rename() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*)
+        __scriptoriumcomp "--help --dont-commit --message --push"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_up() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*) __scriptoriumcomp "--help"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium_verify() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+        --*) __scriptoriumcomp "--help --diff --quick --script"
+      return
+      ;;
+    esac   
+}
+
+_scriptorium(){
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	if [[ "$COMP_CWORD" = "1" ]] # we are matching the command
+	then
+	  opts="add commit down git list push remove rename up verify"
+	  COMPREPLY=( $(compgen -W "${opts}" ${cur}) )
+	  return 0
+	fi
+
+    cmd="${COMP_WORDS[1]}"
+    
+    case "$cmd" in
+        add) _scriptorium_add ;;
+        commit) _scriptorium_commit ;;
+        down) _scriptorium_down ;;
+        git) _scriptorium_git ;;
+        list) _scriptorium_list ;;
+        push) _scriptorium_push ;;
+        remove) _scriptorium_remove ;;
+        rename) _scriptorium_rename ;;
+        up) _scriptorium_up ;;
+        verify) _scriptorium_verify ;;
+        *)
+        esac
+}
+
+complete -o bashdefault -o default -F _scriptorium scriptorium
