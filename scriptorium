@@ -170,6 +170,9 @@ class Parser:
         parser_git = subparsers.add_parser(
             "git", help="asks for a string and runs it as a git command"
         )
+        parser_git.add_argument(
+            "-c", "--command", help="quoted string containing git command"
+        )
         parser_git.set_defaults(func=Scripts.do_git)
 
         #
@@ -438,8 +441,11 @@ class Scripts:
 
     def do_git(args, jpc):
         """ subcommand `git` """
-        print("git not implemented")
-        str = input("Command for git: ")
+
+        if args.command:
+            string = args.command
+        else:
+            string = input("Command for git: ")
         command = shlex.split(str, posix=False)
         command.insert(0, "git")
         logger.info(f"Git command: {command}")

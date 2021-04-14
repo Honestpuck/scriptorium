@@ -89,13 +89,14 @@ This downloads all the scripts from the JPC server copying over the current cont
 ### `git`
 
 ```
-usage: scriptorium git [-h]
+usage: scriptorium git [-h] [-c COMMAND]
 
 optional arguments:
   -h, --help  show this help message and exit
+  -c, --command quoted string containing git command
 ```
 
-The `git` command will ask for a string and run it as a git command in both directories. The string is split using a routine that  splits the string into command "words" honouring any quoted strings and leaving the quote in the "word". An example, the entry 'this that "and that"' will split into `['this', 'that', '"and that"']`
+The `git` command will ask for a string and run it as a git command in both directories. The string is split using `shlex`, a library that splits the string into command "words" honouring any quoted strings and leaving the quotes in the "word". An example, the string 'this that "and that"' will split into `['this', 'that', '"and that"']`
 
 ### `list`
 
@@ -157,17 +158,13 @@ optional arguments:
 ### `up`
 
 ```
-usage: scriptorium up [-h] [-p | -d] [-m MESSAGE]
+usage: scriptorium up [-h]
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -p, --push            do a push after commit
-  -d, --dont-commit     don't do a commit
-  -m MESSAGE, --message MESSAGE
-                        set commit message
+  -h, --help  show this help message and exit
 ```
 
-Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them. You want to do this before a push.
+Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them.
 
 ### `verify`
 
@@ -183,9 +180,11 @@ Now clone the two repos down to your Mac.
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 
+Put `scriptorium` somewhere in your path, like `/usr/local/bin`
+
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
-The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and it will spring into existence in all three places.
+The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places.
 
 The file `_scriptorium` is a bash command completion for scriptorium. See https://github.com/Honestpuck/apple_complete for instructions on how to install it for your shell.
 
