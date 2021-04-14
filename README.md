@@ -8,8 +8,7 @@ With the system installed you can make changes to the scripts in the text direct
 
 The basic structure is `scriptorium <command>` some with required parameters and command options. 
 
-_Note for testers: At the moment this is fairly well tested, apart from `verify`._
-_`verify --quick` is working but not the rest of `verify`. I'm not quite using this script in production, YMMV._
+_Note for testers: At the moment this is fairly well tested. I'm not quite using this script in production, YMMV._
 
 ## Commands
 
@@ -187,6 +186,8 @@ Set the variables at the top of scriptorium to point to the two directories and 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
 The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and it will spring into existence in all three places.
+
+### Work Practices
 
 ### Still to be done
 
