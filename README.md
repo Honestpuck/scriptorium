@@ -187,6 +187,8 @@ Now run `scriptorium down` and all the scripts will be populated on your Mac. Wh
 
 The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and it will spring into existence in all three places.
 
+The file `_scriptorium` is a bash command completion for scriptorium. See https://github.com/Honestpuck/apple_complete for instructions on how to install it for your shell.
+
 ### Work practices
 
 The remove, rename and up commands do a commit by default at the moment. The problem in doing a commit is that the up command relies on changed files not being committed until after up.
