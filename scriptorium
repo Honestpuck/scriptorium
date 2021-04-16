@@ -401,10 +401,23 @@ class Scripts:
     def do_commit(args, jpc):
         """ do a git commit """
         """ this commit, and optionally a push, on both directories """
+        # first change to scripts directory
+        os.chdir(jpc.sh_dir)
+        # then see if we do have scripts to be done
+        command = ["git", "diff", "--name-only", "-z", "HEAD"]
+        complete = subprocess.run(command, text=True, capture_output=True)
+        if complete.returncode != 0:
+            # git diff prints a heap so give our user just the first 5 lines
+            lines = complete.stderr.split("\n")
+            for i in lines[0:5]:
+                print(i)
+            raise ScriptError("git diff in scripts directory failed")
+        files = complete.stderr.split("\0")
+        lst = " ".join(files[:-1])  # last one is blank
         do_up(args, jpc)
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
-        msg = args.message if args.message else " ".join(argv[1:])
+        msg = args.message if args.message else lst
         command = ["git", "commit", "-m", msg]
         Scripts.both_repos(args, jpc, command)
 
@@ -593,14 +606,14 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git diff in scripts directory failed")
-        if complete.stdout == "":
+        if complete.stderr == "":
             raise ScriptError("No files to process")
             exit(1)
         # we have work to do
-        files = complete.stdout.split("\0")
+        files = complete.stderr.split("\0")
         lst = " ".join(files[:-1])  # last one is blank
         info(f"Processing {lst}")
-        for fn in lst:
+        for fn in files:
             print(f"Processing {fn}")
             logger.debug(f"Processing {fn}")
             # first get our script

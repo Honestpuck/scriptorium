@@ -68,7 +68,7 @@ optional arguments:
                         set commit message
 ```
 
-If you've made a number of changes with `--dont-commit` then you are going to want to perform a commit eventually. This does a `git add *` before the commit. If you don't specify a message it will be a list of files altered.
+If you've made a number of changes with `--dont-commit` then you are going to want to perform a commit eventually. This does an `up` and `git add *` before the actual commit.
 
 ### `down`
 
@@ -164,7 +164,7 @@ optional arguments:
   -h, --help  show this help message and exit
 ```
 
-Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them.
+Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them. This means it must be done before any commits, which is why `scriptorium commit` does an up before the requested commit.
 
 ### `verify`
 
@@ -180,11 +180,11 @@ Now clone the two repos down to your Mac.
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 
-Put `scriptorium` somewhere in your path, like `/usr/local/bin`
+Put `scriptorium` somewhere in your path, like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
-The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places.
+The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places. It will be as good as empty, it's contents are set to `# <name>` where <name> is the name you have given it.
 
 The file `_scriptorium` is a bash command completion for scriptorium. See https://github.com/Honestpuck/apple_complete for instructions on how to install it for your shell.
 
