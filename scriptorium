@@ -414,12 +414,15 @@ class Scripts:
             raise ScriptError("git diff in scripts directory failed")
         files = complete.stderr.split("\0")
         lst = " ".join(files[:-1])  # last one is blank
-        do_up(args, jpc)
+        Scripts.do_up(args, jpc)
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else lst
         command = ["git", "commit", "-m", msg]
         Scripts.both_repos(args, jpc, command)
+        if args.push:
+            command = ["git", "push"]
+            Scripts.both_repos(args, jpc, command)
 
     def do_down(args, jpc):
         """ subcommand `down` """
@@ -606,20 +609,22 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git diff in scripts directory failed")
-        if complete.stderr == "":
+        if complete.stdout == "":
             raise ScriptError("No files to process")
             exit(1)
         # we have work to do
-        files = complete.stderr.split("\0")
+        files = complete.stdout.split("\0")
         lst = " ".join(files[:-1])  # last one is blank
         info(f"Processing {lst}")
         for fn in files:
+            if fn == "":
+                continue
             print(f"Processing {fn}")
             logger.debug(f"Processing {fn}")
             # first get our script
-            with open(f"{jpc.sh_out}/{fn}", "r") as fp:
+            with open(f"{jpc.sh_dir}/{fn}", "r") as fp:
                 scrpt = fp.read()
-            x_file = jpc.xml_out + "/" + fn
+            x_file = jpc.xml_dir + "/" + fn
             xml = ET.parse(x_file)
             root = xml.getroot()
             root.find("script_contents").text = scrpt
@@ -636,7 +641,7 @@ class Scripts:
                 )
                 exit(1)
             xml.write(x_file)
-        exit()
+        return
 
     def do_verify(args, jpc):
         """ verify scripts, XML and server against each other """
