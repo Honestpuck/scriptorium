@@ -28,7 +28,6 @@ import inquirer
 
 # where we stash the XML files
 xml_dir = "~/work/test/xml"
-
 # where we stash the script files
 sh_dir = "~/work/test/scripts"
 
@@ -237,9 +236,7 @@ class Parser:
         #
         # create parser for 'up'
         #
-        parser_up = subparsers.add_parser(
-            "up", help="upload and commit added and changed scripts"
-        )
+        parser_up = subparsers.add_parser("up", help="upload changed scripts")
         parser_up.set_defaults(func=Scripts.do_up)
 
         #

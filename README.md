@@ -96,7 +96,7 @@ optional arguments:
   -c, --command quoted string containing git command
 ```
 
-The `git` command will ask for a string and run it as a git command in both directories. The string is split using `shlex`, a library that splits the string into command "words" honouring any quoted strings and leaving the quotes in the "word". An example, the string 'this that "and that"' will split into `['this', 'that', '"and that"']`
+The `git` command will ask for a string and run it as a git command in both directories. The string is split using `shlex`, a library that splits the string into command "words" honouring any quoted strings and leaving the quotes in the "word". An example, the string 'this that "and that"' will split into `['this', 'that', '"and that"']`. You don't need to include the `git` at the front, scriptorium will add it for you.
 
 ### `list`
 
@@ -180,7 +180,7 @@ Now clone the two repos down to your Mac.
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 
-Put `scriptorium` somewhere in your path, like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
+Put `scriptorium` somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
@@ -190,13 +190,13 @@ The file `_scriptorium` is a bash command completion for scriptorium. See https:
 
 ### Work practices
 
-The remove, rename and up commands do a commit by default at the moment. The problem in doing a commit is that the up command relies on changed files not being committed until after up.
+The remove and rename commands do a commit by default at the moment. The problem in doing a commit is that the up command relies on changed files not being committed until after up.
 
 The best way of solving this dilemma would be for all commits to be preceded by an up command within scriptorium. Since remove, rename and add already modify the server this problem is only triggered when you edit a script so this seems acceptable and has been implemented.
 
 ### Still to be done
 
-On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters. I'm also going to add a `--command COMMAND` option to `git` so you can do it all from the command line without prompts.
+On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
 
 Some notes on best practices and work methods should also appear at some point. Contributions to these would be greatly appreciated.
 
