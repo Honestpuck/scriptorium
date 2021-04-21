@@ -28,9 +28,8 @@ import inquirer
 
 # where we stash the XML files
 xml_dir = "~/work/test/xml"
-# where we stash the script files
-sh_dir = "~/work/test/scripts"
-
+# where we stash the text files
+sh_dir = "~/work/test/text"
 # prefs file
 prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
@@ -291,7 +290,9 @@ class Scripts:
     def both_repos(args, jpc, command):
         """ do a shell command in each of our two directories """
         os.chdir(jpc.sh_dir)
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, text=True, shell=True, capture_output=True
+        )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
             lines = complete.stderr.split("\n")
@@ -303,7 +304,9 @@ class Scripts:
             print(" ".join(command))
             info(complete.stderr)
         os.chdir(jpc.xml_dir)
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, text=True, shell=True, capture_output=True
+        )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
             lines = complete.stderr.split("\n")
@@ -401,7 +404,7 @@ class Scripts:
         # first change to scripts directory
         os.chdir(jpc.sh_dir)
         # then see if we do have scripts to be done
-        command = ["git", "diff", "--name-only", "-z", "HEAD"]
+        command = ["git", "diff", "--name-only", "-z"]
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git diff prints a heap so give our user just the first 5 lines
@@ -412,10 +415,10 @@ class Scripts:
         files = complete.stderr.split("\0")
         lst = " ".join(files[:-1])  # last one is blank
         Scripts.do_up(args, jpc)
-        command = ["git", "add", "*"]
+        command = ["git add *"]
         Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else lst
-        command = ["git", "commit", "-m", msg]
+        command = f"git commit -m '{msg}'"
         Scripts.both_repos(args, jpc, command)
         if args.push:
             command = ["git", "push"]
@@ -459,8 +462,7 @@ class Scripts:
             string = args.command
         else:
             string = input("Command for git: ")
-        command = shlex.split(str, posix=False)
-        command.insert(0, "git")
+        command = f"git {string}"
         logger.info(f"Git command: {command}")
         Scripts.both_repos(args, jpc, command)
         exit()
@@ -522,9 +524,11 @@ class Scripts:
             raise ScriptError(
                 f"failed to delete to JPC: {ret.status_code}: {url}"
             )
-        command = ["git", "rm", args.name]
+        command = [f"git rm '{args.name}'"]
         logger.info("git rm in XML directory")
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, shell=True, text=True, capture_output=True
+        )
         if complete.returncode != 0:
             # git can print a heap so give our user
             # just the first 5 lines
@@ -534,7 +538,9 @@ class Scripts:
             raise ScriptError("git rm in XML directory failed")
         os.chdir(jpc.sh_dir)
         logger.info("git rm in script directory")
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, shell=True, text=True, capture_output=True
+        )
         if complete.returncode != 0:
             # git can print a heap so give our user
             # just the first 5 lines
@@ -544,6 +550,7 @@ class Scripts:
             raise ScriptError("git mv in scripts directory failed")
         if args.dont_commit:
             exit()
+        args.message = f"remove {args.name}"
         Scripts.do_commit(args, jpc)
         exit()
 
@@ -587,6 +594,7 @@ class Scripts:
             raise ScriptError("git mv in scripts directory failed")
         if args.dont_commit:
             exit()
+        args.message = f"{args.src} to {args.dst}"
         Scripts.do_commit(args, jpc)
         logger.info("remove succeeded")
         exit()
@@ -598,7 +606,7 @@ class Scripts:
         # first change to scripts directory
         os.chdir(jpc.sh_dir)
         # then see if we do have scripts to be done
-        command = ["git", "diff", "--name-only", "-z", "HEAD"]
+        command = ["git", "diff", "--name-only", "-z"]
         complete = subprocess.run(command, text=True, capture_output=True)
         if complete.returncode != 0:
             # git diff prints a heap so give our user just the first 5 lines
@@ -606,11 +614,10 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git diff in scripts directory failed")
-        if complete.stdout == "":
-            raise ScriptError("No files to process")
-            exit(1)
+        if complete.stderr == "":
+            return
         # we have work to do
-        files = complete.stdout.split("\0")
+        files = complete.stderr.split("\0")
         lst = " ".join(files[:-1])  # last one is blank
         info(f"Processing {lst}")
         for fn in files:
