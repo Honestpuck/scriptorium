@@ -28,7 +28,8 @@ _Note for testers: At the moment this is fairly well tested. I'm not quite using
 ### `add`
 
 ```
-usage: scriptorium add [-h] [-f FILENAME] [-c CATEGORY] [-n NOTES] [-p | -d] [-m MESSAGE] [-a | -b | -r] [-z]
+usage: scriptorium add [-h] [-f FILENAME] [-c CATEGORY] [-n NOTES] [-p | -d] [-m MESSAGE] 
+                       [-a | -b | -r] [-z]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -164,7 +165,7 @@ optional arguments:
   -h, --help  show this help message and exit
 ```
 
-Uploads all changes and adds to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them. This means it must be done before any commits, which is why `scriptorium commit` does an up before the requested commit.
+Uploads all changes and additions to the server. Behind scenes it does a `git diff` in the scripts directory to get a list of changes then updates those scripts in the XMl files and uploads them. This means it must be done before any commits, which is why `scriptorium commit` does an up before the requested commit.
 
 ### `verify`
 
@@ -184,7 +185,7 @@ Verify does a compare of the two directories and the server. The quick option ju
 
 Then you will want to get the git bits working. Create the two empty repositories in your git store (such as Github, though if you use Github make them private).
 
-Now clone the two repos down to your Mac.
+Now clone the two repos down to your Mac. You will probably get a warning from git that you have pulled down an empty repo.
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 

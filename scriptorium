@@ -485,28 +485,7 @@ class Scripts:
     def do_push(args, jpc):
         os.chdir(jpc.sh_dir)
         command = ["git", "push"]
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git push in scripts directory failed")
-        info("Push scripts:")
-        info(complete.stderr)
-        os.chdir(jpc.xml_dir)
-        command = ["git", "push"]
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git push in scripts directory failed")
-        info("Push XML:")
-        info(complete.stderr)
+        Scripts.both_repos(args, jpc, command)
 
     def do_rem(args, jpc):
         """ subcommand `remove` """
@@ -525,29 +504,7 @@ class Scripts:
                 f"failed to delete to JPC: {ret.status_code}: {url}"
             )
         command = [f"git rm '{args.name}'"]
-        logger.info("git rm in XML directory")
-        complete = subprocess.run(
-            command, shell=True, text=True, capture_output=True
-        )
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git rm in XML directory failed")
-        os.chdir(jpc.sh_dir)
-        logger.info("git rm in script directory")
-        complete = subprocess.run(
-            command, shell=True, text=True, capture_output=True
-        )
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git mv in scripts directory failed")
+        Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
             exit()
         args.message = f"remove {args.name}"
@@ -573,25 +530,7 @@ class Scripts:
                 f"failed to write to JPC: {ret.status_code}: {url}"
             )
         command = ["git", "mv", args.src, args.dst]
-        logger.info("git rm in XML directory")
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git rm in XML directory failed")
-        os.chdir(jpc.sh_dir)
-        logger.info("git rm in script directory")
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git can print a heap so give our user
-            # just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git mv in scripts directory failed")
+        Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
             exit()
         args.message = f"{args.src} to {args.dst}"
