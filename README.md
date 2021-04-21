@@ -168,7 +168,15 @@ Uploads all changes and adds to the server. Behind scenes it does a `git diff` i
 
 ### `verify`
 
-Verify does a compare of the two directories and the server. The quick option just lists the files in each location and compares the lists. If they are different it prints a diff. If you don't specify `--quick` then the actual text is compared. The normal form just prints a short message if they differ. With `--diff` a diff is printed, this can quickly become quite large.
+```
+optional arguments:
+  -h, --help            show this help message and exit
+  -d, --diff            print diff when checking every script
+  -q, --quick           Just check lists not actual text
+  -s SCRIPT, --script SCRIPT
+                        specify a single script to check
+```
+Verify does a compare of the two directories and the server. The quick option just lists the files in each location and compares the lists. If they are different it prints a diff. If you don't specify `--quick` then the actual text is compared. The normal form just prints a short message if they differ. With `--diff` a diff is printed, this can quickly become quite large. You can specify a single script to verify with `-s`.
 
 ## Install
 
