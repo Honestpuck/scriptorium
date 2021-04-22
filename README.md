@@ -71,6 +71,24 @@ optional arguments:
 
 If you've made a number of changes with `--dont-commit` then you are going to want to perform a commit eventually. This does an `up` and `git add *` before the actual commit.
 
+### `delete`
+
+```
+usage: scriptorium delete [-h] [-p | -d] [-m MESSAGE] name
+
+positional arguments:
+  name                  name of script to remove
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p, --push            do a git push after commit
+  -d, --dont-commit     don't do a commit
+  -m MESSAGE, --message MESSAGE
+                        set commit message
+```
+
+Deletes a script from both directories and Jamf
+
 ### `down`
 
 ```
@@ -120,24 +138,6 @@ optional arguments:
 ```
 
 If you make a number of commits without a `--push` then you will need to do it eventually. This does it in both directories at once.
-
-### `remove`
-
-```
-usage: scriptorium remove [-h] [-p | -d] [-m MESSAGE] name
-
-positional arguments:
-  name                  name of script to remove
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -p, --push            do a git push after commit
-  -d, --dont-commit     don't do a commit
-  -m MESSAGE, --message MESSAGE
-                        set commit message
-```
-
-Removes a script from all three spots.
 
 ### `rename`
 

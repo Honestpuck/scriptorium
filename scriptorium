@@ -22,14 +22,13 @@ import xml.etree.ElementTree as ET
 import logging.handlers
 import requests
 import subprocess
-import shlex
 import difflib
 import inquirer
 
 # where we stash the XML files
 xml_dir = "~/work/test/xml"
 # where we stash the text files
-sh_dir = "~/work/test/text"
+txt_dir = "~/work/test/text"
 # prefs file
 prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
@@ -72,7 +71,7 @@ class Jamf:
         self.auth = ""  # name and password for JPC
         self.hdrs = ""  # header for requests, for JSON instead of XML
         self.xml_dir = ""
-        self.sh_dir = ""
+        self.txt_dir = ""
 
 
 class Parser:
@@ -91,7 +90,7 @@ class Parser:
         parser_add = subparsers.add_parser("add", help="add script to system")
         parser_add.add_argument("-f", "--filename", help="name of new script")
         parser_add.add_argument("-c", "--category", help="category of script")
-        parser_add.add_argument("-n", "--notes", help="note about script")
+        parser_add.add_argument("-n", "--notes", help="notes about script")
         group = parser_add.add_mutually_exclusive_group()
         group.add_argument(
             "-p",
@@ -149,6 +148,29 @@ class Parser:
         parser_commit.set_defaults(func=Scripts.do_commit)
 
         #
+        # create parser for `delete`
+        #
+        parser_del = subparsers.add_parser(
+            "delete", help="delete a script from system"
+        )
+        parser_del.add_argument("name", help="name of script to remove")
+        group = parser_del.add_mutually_exclusive_group()
+        group.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        group.add_argument(
+            "-d",
+            "--dont-commit",
+            help="don't do a commit",
+            action="store_true",
+        )
+        parser_del.add_argument("-m", "--message", help="set commit message")
+        parser_del.set_defaults(func=Scripts.do_del)
+
+        #
         # create parser for `down`
         #
         parser_down = subparsers.add_parser(
@@ -186,29 +208,6 @@ class Parser:
         #
         parser_push = subparsers.add_parser("push", help="git push")
         parser_push.set_defaults(func=Scripts.do_push)
-
-        #
-        # create parser for `remove`
-        #
-        parser_rm = subparsers.add_parser(
-            "remove", help="remove (or delete) script from system"
-        )
-        parser_rm.add_argument("name", help="name of script to remove")
-        group = parser_rm.add_mutually_exclusive_group()
-        group.add_argument(
-            "-p",
-            "--push",
-            help="do a git push after commit",
-            action="store_true",
-        )
-        group.add_argument(
-            "-d",
-            "--dont-commit",
-            help="don't do a commit",
-            action="store_true",
-        )
-        parser_rm.add_argument("-m", "--message", help="set commit message")
-        parser_rm.set_defaults(func=Scripts.do_rem)
 
         #
         # create parser for `rename`
@@ -289,7 +288,7 @@ class Scripts:
 
     def both_repos(args, jpc, command):
         """ do a shell command in each of our two directories """
-        os.chdir(jpc.sh_dir)
+        os.chdir(jpc.txt_dir)
         complete = subprocess.run(
             command, text=True, shell=True, capture_output=True
         )
@@ -389,7 +388,7 @@ class Scripts:
             )
         xml = ret.text
         xml_filepath = f"{jpc.xml_dir}/{filename}"
-        sh_filepath = f"{jpc.sh_dir}/{filename}"
+        sh_filepath = f"{jpc.txt_dir}/{filename}"
         with open(xml_filepath, "w") as fp:
             fp.write(xml)
         with open(sh_filepath, "w") as fp:
@@ -402,7 +401,7 @@ class Scripts:
         """ do a git commit """
         """ this commit, and optionally a push, on both directories """
         # first change to scripts directory
-        os.chdir(jpc.sh_dir)
+        os.chdir(jpc.txt_dir)
         # then see if we do have scripts to be done
         command = ["git", "diff", "--name-only", "-z"]
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -444,7 +443,7 @@ class Scripts:
             root = ET.fromstring(xml)
             text = root.findtext("script_contents")
             xml_filepath = f"{jpc.xml_dir}/{name}"
-            sh_filepath = f"{jpc.sh_dir}/{name}"
+            sh_filepath = f"{jpc.txt_dir}/{name}"
             if not args.no_force or not os.path.isfile(xml_filepath):
                 info(f"Writing XML {name}")
                 with open(xml_filepath, "w") as fp:
@@ -483,12 +482,12 @@ class Scripts:
         exit()
 
     def do_push(args, jpc):
-        os.chdir(jpc.sh_dir)
+        os.chdir(jpc.txt_dir)
         command = ["git", "push"]
         Scripts.both_repos(args, jpc, command)
 
-    def do_rem(args, jpc):
-        """ subcommand `remove` """
+    def do_del(args, jpc):
+        """ subcommand `delete` """
 
         logger.info(" ".join(argv[1:]))
         # go to XML dir
@@ -543,7 +542,7 @@ class Scripts:
 
         logger.info(" ".join(argv[1:]))
         # first change to scripts directory
-        os.chdir(jpc.sh_dir)
+        os.chdir(jpc.txt_dir)
         # then see if we do have scripts to be done
         command = ["git", "diff", "--name-only", "-z"]
         complete = subprocess.run(command, text=True, capture_output=True)
@@ -565,7 +564,7 @@ class Scripts:
             print(f"Processing {fn}")
             logger.debug(f"Processing {fn}")
             # first get our script
-            with open(f"{jpc.sh_dir}/{fn}", "r") as fp:
+            with open(f"{jpc.txt_dir}/{fn}", "r") as fp:
                 scrpt = fp.read()
             x_file = jpc.xml_dir + "/" + fn
             xml = ET.parse(x_file)
@@ -594,7 +593,7 @@ class Scripts:
         # get list of script files
         print("Lists:")
         command = ["ls"]
-        os.chdir(jpc.sh_dir)
+        os.chdir(jpc.txt_dir)
         complete = subprocess.run(command, text=True, capture_output=True)
         sh = complete.stdout.splitlines()
         os.chdir(jpc.xml_dir)
@@ -652,7 +651,7 @@ class Scripts:
                 )
             server = ret.text.splitlines(keepends=True)
             xml_filepath = f"{jpc.xml_dir}/{name}"
-            sh_filepath = f"{jpc.sh_dir}/{name}"
+            sh_filepath = f"{jpc.txt_dir}/{name}"
             with open(xml_filepath, "r") as fp:
                 xml = fp.read()
             root = ET.fromstring(xml)
@@ -696,11 +695,11 @@ class Scripts:
         jpc = Jamf()
         # sanity check
         jpc.xml_dir = os.path.expanduser(xml_dir)
-        jpc.sh_dir = os.path.expanduser(sh_dir)
+        jpc.txt_dir = os.path.expanduser(txt_dir)
         if not os.path.isdir(jpc.xml_dir):
             raise ScriptError(f"directory {jpc.xml_dir} does not exist")
-        if not os.path.isdir(jpc.sh_dir):
-            raise ScriptError(f"directory {jpc.sh_dir} does not exist")
+        if not os.path.isdir(jpc.txt_dir):
+            raise ScriptError(f"directory {jpc.txt_dir} does not exist")
         # get prefs
         plist = os.path.expanduser(prefs_file)
         fp = open(plist, "rb")

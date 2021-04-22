@@ -109,13 +109,13 @@ _scriptorium_push() {
     esac   
 }
 
-_scriptorium_remove() {
+_scriptorium_delete() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     case "$cur" in
         --*) __scriptoriumcomp "--help --dont-commit --message --push"
       return
       ;;
-    esac   
+    esac
 }
 
 _scriptorium_rename() {
@@ -168,7 +168,7 @@ _scriptorium(){
         git) _scriptorium_git ;;
         list) _scriptorium_list ;;
         push) _scriptorium_push ;;
-        remove) _scriptorium_remove ;;
+        delete) _scriptorium_delete ;;
         rename) _scriptorium_rename ;;
         up) _scriptorium_up ;;
         verify) _scriptorium_verify ;;
