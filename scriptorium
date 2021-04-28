@@ -12,7 +12,7 @@ __author__ = "Tony Williams"
 __email__ = "tonyw@honestpuck.com"
 __copyright__ = "Copyright (c) 2021 Tony Williams"
 __license__ = "MIT"
-__version__ = "0.8"
+__version__ = "1.0b"
 
 import os
 from sys import argv, stderr, stdout
@@ -37,10 +37,10 @@ LOGLEVEL = logging.DEBUG
 # template for use by add
 template = """<?xml version="1.0" encoding="UTF-8"?>
   <script>
-    <id>70</id>
-    <name>ShareFix</name>
+    <id>0</id>
+    <name>Garbage</name>
     <category>End User Experience</category>
-    <filename>ShareFix</filename>
+    <filename>Garbage</filename>
     <info/>
     <notes/>
     <priority>After</priority>
@@ -354,6 +354,26 @@ class Scripts:
         ]
         answer = inquirer.prompt(questions)
         category = answer["category"]
+        if not (after or before or reboot):
+            # we haven't specified a priority
+            questions = [
+                inquirer.list(
+                    "priority",
+                    message="Priority: after, before or at reboot ",
+                    choices=["After", "Before", "Reboot"],
+                )
+            ]
+            answer = inquirer.prompt(questions)
+            priority = answer["priority"]
+        elif args.after:
+            priority = "After"
+        elif args.before:
+            priority = "Before"
+        elif args.reboot:
+            priority = "Reboot"
+        else:
+            raise ScriptError("Bad priority in Add")
+
         root = ET.fromstring(template)
         root.find("id").text = "0"
         root.find("filename").text = filename
@@ -361,6 +381,7 @@ class Scripts:
         root.find("category").text = category
         root.find("script_contents").text = f"# {filename}"
         root.find("notes").text = notes
+        root.find("priority").text = priority
         params = root.find("parameters")
         if not args.zero:
             count = 4
