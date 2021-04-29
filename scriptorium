@@ -297,9 +297,9 @@ class Scripts:
             lines = complete.stderr.split("\n")
             for i in lines[0:5]:
                 print(i)
-            raise ScriptError(f"scripts directory failed: {command}")
+            raise ScriptError(f"text directory failed: {command}")
         if complete.stderr:
-            print("Scripts")
+            print("Text")
             print(" ".join(command))
             info(complete.stderr)
         os.chdir(jpc.xml_dir)
@@ -354,7 +354,7 @@ class Scripts:
         ]
         answer = inquirer.prompt(questions)
         category = answer["category"]
-        if not (after or before or reboot):
+        if not (args.after or args.before or args.reboot):
             # we haven't specified a priority
             questions = [
                 inquirer.list(
@@ -373,7 +373,6 @@ class Scripts:
             priority = "Reboot"
         else:
             raise ScriptError("Bad priority in Add")
-
         root = ET.fromstring(template)
         root.find("id").text = "0"
         root.find("filename").text = filename
@@ -504,7 +503,7 @@ class Scripts:
 
     def do_push(args, jpc):
         os.chdir(jpc.txt_dir)
-        command = ["git", "push"]
+        command = ["git push"]
         Scripts.both_repos(args, jpc, command)
 
     def do_del(args, jpc):
@@ -523,7 +522,7 @@ class Scripts:
             raise ScriptError(
                 f"failed to delete to JPC: {ret.status_code}: {url}"
             )
-        command = [f"git rm '{args.name}'"]
+        command = [f"git rm {args.name}"]
         Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
             exit()
