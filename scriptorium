@@ -357,9 +357,9 @@ class Scripts:
         if not (args.after or args.before or args.reboot):
             # we haven't specified a priority
             questions = [
-                inquirer.list(
+                inquirer.List(
                     "priority",
-                    message="Priority: after, before or at reboot ",
+                    message="Priority: after, before or at reboot",
                     choices=["After", "Before", "Reboot"],
                 )
             ]
@@ -407,12 +407,13 @@ class Scripts:
                 f"script get failed: {ret.status_code} : {ret.url}"
             )
         xml = ret.text
-        xml_filepath = f"{jpc.xml_dir}/{filename}"
-        sh_filepath = f"{jpc.txt_dir}/{filename}"
+        xml_filepath = f"{jpc.xml_dir}/'{filename}'"
+        sh_filepath = f"{jpc.txt_dir}/'{filename}'"
         with open(xml_filepath, "w") as fp:
             fp.write(xml)
         with open(sh_filepath, "w") as fp:
             fp.write(f"# {filename}")
+        args.message = f"adding {filename}"
         if args.dont_commit:
             exit()
         Scripts.do_commit(args, jpc)
@@ -548,7 +549,7 @@ class Scripts:
             raise ScriptError(
                 f"failed to write to JPC: {ret.status_code}: {url}"
             )
-        command = ["git", "mv", args.src, args.dst]
+        command = [f"git mv '{args.src}' '{args.dst}'"]
         Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
             exit()
