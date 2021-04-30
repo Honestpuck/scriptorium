@@ -522,7 +522,7 @@ class Scripts:
             raise ScriptError(
                 f"failed to delete to JPC: {ret.status_code}: {url}"
             )
-        command = [f"git rm {args.name}"]
+        command = [f"git rm '{args.name}'"]
         Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
             exit()
