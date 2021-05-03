@@ -15,7 +15,7 @@ __license__ = "MIT"
 __version__ = "1.0b"
 
 import os
-import Path from pathlib
+from pathlib import Path
 from sys import argv, stderr, stdout
 import argparse
 import plistlib
@@ -412,9 +412,9 @@ class Scripts:
         xml = ret.text
         xml_filepath = jpc.xml_dir / filename
         sh_filepath = jpc.txt_dir / filename
-        with xml_filepath.open(mode='w') as fp:
+        with xml_filepath.open(mode="w") as fp:
             fp.write(xml)
-        with sh_filepath.open(mode='w') as fp:
+        with sh_filepath.open(mode="w") as fp:
             fp.write(f"# {filename}")
         args.message = f"adding {filename}"
         if args.dont_commit:
@@ -720,9 +720,9 @@ class Scripts:
         # sanity check
         jpc.xml_dir = Path(xml_dir).expanduser()
         jpc.txt_dir = Path(txt_dir).expanduser()
-        if not Path.isdir(jpc.xml_dir):
+        if not Path.is_dir(jpc.xml_dir):
             raise ScriptError(f"directory {jpc.xml_dir} does not exist")
-        if not Path.isdir(jpc.txt_dir):
+        if not Path.is_dir(jpc.txt_dir):
             raise ScriptError(f"directory {jpc.txt_dir} does not exist")
         # get prefs
         plist = os.path.expanduser(prefs_file)
