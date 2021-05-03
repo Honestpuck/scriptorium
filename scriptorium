@@ -289,11 +289,13 @@ class Scripts:
         logger.addHandler(ch)
         logger.setLevel(LOGLEVEL)
 
-    def both_repos(args, jpc, command):
+    def both_repos(args, jpc, command, sh=False):
         """ do a shell command in each of our two directories """
         os.chdir(jpc.txt_dir)
         complete = subprocess.run(
-            command, text=True, shell=True, capture_output=True
+            command,
+            text=True,
+            shell=sh,
         )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
@@ -307,7 +309,9 @@ class Scripts:
             info(complete.stderr)
         os.chdir(jpc.xml_dir)
         complete = subprocess.run(
-            command, text=True, shell=True, capture_output=True
+            command,
+            text=True,
+            shell=sh,
         )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
@@ -438,10 +442,10 @@ class Scripts:
         files = complete.stderr.split("\0")
         lst = " ".join(files[:-1])  # last one is blank
         Scripts.do_up(args, jpc)
-        command = ["git add *"]
+        command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else lst
-        command = f"git commit -m '{msg}'"
+        command = ["git", "commit", "-m", msg]
         Scripts.both_repos(args, jpc, command)
         if args.push:
             command = ["git", "push"]
@@ -526,8 +530,9 @@ class Scripts:
             raise ScriptError(
                 f"failed to delete to JPC: {ret.status_code}: {url}"
             )
-        command = [f"git rm '{args.name}'"]
-        Scripts.both_repos(args, jpc, command)
+        f = Path(args.name)
+        command = ["git", "rm", f]
+        Scripts.both_repos(args, jpc, command, sh=False)
         if args.dont_commit:
             exit()
         args.message = f"remove {args.name}"
