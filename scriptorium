@@ -51,7 +51,6 @@ template = """<?xml version="1.0" encoding="UTF-8"?>
   </script>
 """
 
-LOGFILE = f"/usr/local/var/log/{__program__}.log"
 logger = logging.getLogger(__program__)
 
 
@@ -273,6 +272,10 @@ class Scripts:
     def setup_logging():
         """Defines a nicely formatted logger"""
 
+        log_dir = "/usr/local/var/log"
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
+        LOGFILE = f"{log_dir}/{__program__}.log"
         ch = logging.handlers.TimedRotatingFileHandler(
             LOGFILE, when="D", interval=1, backupCount=7
         )
