@@ -489,7 +489,7 @@ class Scripts:
             string = args.command
         else:
             string = input("Command for git: ")
-        command = f"git {string}"
+        command = f"git {string}".split(" ")
         logger.info(f"Git command: {command}")
         Scripts.both_repos(args, jpc, command)
         exit()
@@ -511,7 +511,7 @@ class Scripts:
 
     def do_push(args, jpc):
         os.chdir(jpc.txt_dir)
-        command = ["git push"]
+        command = ["git", "push"]
         Scripts.both_repos(args, jpc, command)
 
     def do_del(args, jpc):
@@ -557,7 +557,7 @@ class Scripts:
             raise ScriptError(
                 f"failed to write to JPC: {ret.status_code}: {url}"
             )
-        command = [f"git mv '{args.src}' '{args.dst}'"]
+        command = ["git", "mv", Path(args.src), Path(args.dst)]
         Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
             exit()
@@ -595,7 +595,7 @@ class Scripts:
             # first get our script
             with open(f"{jpc.txt_dir}/{fn}", "r") as fp:
                 scrpt = fp.read()
-            x_file = jpc.xml_dir + "/" + fn
+            x_file = jpc.xml_dir / fn
             xml = ET.parse(x_file)
             root = xml.getroot()
             root.find("script_contents").text = scrpt
@@ -735,6 +735,7 @@ class Scripts:
         prefs = plistlib.load(fp)
         # we only operate on scripts so create a URL for the endpoint
         jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
+        # we get a list of categories for `add` so another endpoint
         jpc.catURL = f"{prefs['JSS_URL']}/JSSResource/categories"
         # for the whole list JSON is handier so
         jpc.hdrs = {"Accept": "application/json"}
