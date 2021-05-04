@@ -12,9 +12,8 @@ __author__ = "Tony Williams"
 __email__ = "tonyw@honestpuck.com"
 __copyright__ = "Copyright (c) 2021 Tony Williams"
 __license__ = "MIT"
-__version__ = "1.0b"
+__version__ = "1.0b2"
 
-import os
 from pathlib import Path
 from sys import argv, stderr, stdout
 import argparse
@@ -291,6 +290,7 @@ class Scripts:
 
     def both_repos(args, jpc, command, sh=False):
         """ do a shell command in each of our two directories """
+
         complete = subprocess.run(
             command, text=True, shell=sh, cwd=jpc.txt_dir
         )
@@ -319,6 +319,8 @@ class Scripts:
             info(complete.stderr)
 
     def do_add(args, jpc):
+        """ add in all three spots """
+
         filename = args.filename if args.filename else input("Filename: ")
         notes = args.notes if args.notes else input("Notes: ")
         if not args.zero:
@@ -336,14 +338,7 @@ class Scripts:
         choices = []
         ret = requests.get(jpc.catURL, headers=jpc.hdrs, auth=jpc.auth)
         if ret.status_code != 200:
-            print(
-                f"failed to read categories: {ret.status_code}: {jpc.catURL}"
-            )
-            logger.debug(
-                f"failed to write to JPC: {ret.status_code}: {jpc.catURL}"
-            )
-            print(ret.text)
-            exit(1)
+            raise ScriptError(f"failed to read categories: {ret.status_code}: {jpc.catURL}")
         for category in ret.json()["categories"]:
             choices.append(category["name"])
         questions = [
@@ -393,13 +388,9 @@ class Scripts:
         url = f"{jpc.scriptsURL}/id/0"
         ret = requests.post(url, auth=jpc.auth, data=data)
         if ret.status_code != 201:
-            print(
+            raise ScriptError(
                 f"failed to write to JPC: {ret.status_code}: {jpc.scriptsURL}"
             )
-            logger.debug(
-                f"failed to write to JPC: {ret.status_code}: {jpc.scriptsURL}"
-            )
-            exit(1)
         root = ET.fromstring(ret.text)
         idn = root.find("id").text
         ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
@@ -422,6 +413,7 @@ class Scripts:
     def do_commit(args, jpc):
         """ do a git commit """
         """ this commit, and optionally a push, on both directories """
+
         Scripts.do_up(args, jpc)
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
@@ -455,11 +447,11 @@ class Scripts:
             sh_filepath = f"{jpc.txt_dir}/{name}"
             if not args.no_force or not xml_filepath.isdir():
                 info(f"Writing XML {name}")
-                with open(xml_filepath, "w") as fp:
+                with xml_filepath.open(mode="w") as fp:
                     fp.write(xml)
             if not args.no_force or not sh_filepath.isfile():
                 info(f"Writing script {name}")
-                with open(sh_filepath, "w") as fp:
+                with sh_filepath.open(mode="w"} as fp:
                     fp.write(text)
         exit()
 
@@ -569,7 +561,8 @@ class Scripts:
             print(f"Processing {fn}")
             logger.debug(f"Processing {fn}")
             # first get our script
-            with open(f"{jpc.txt_dir}/{fn}", "r") as fp:
+            txt_file = jpc.txt_dir / fn
+            with jpc.txt_dir.open(mode="r") as fp:
                 scrpt = fp.read()
             x_file = jpc.xml_dir / fn
             xml = ET.parse(x_file)
@@ -593,8 +586,6 @@ class Scripts:
     def do_verify(args, jpc):
         """ verify scripts, XML and server against each other """
 
-        # good for lists
-        d = difflib.Differ()
         # get list of script files
         print("Lists:")
         command = ["ls"]
@@ -613,6 +604,8 @@ class Scripts:
         scripts = []
         for script in ret.json()["scripts"]:
             scripts.append(script["name"])
+        # good for lists
+        d = difflib.Differ()
         # first compare
         result = list(d.compare(xml, sh))
         out = []
@@ -659,14 +652,11 @@ class Scripts:
             server = ret.text.splitlines(keepends=True)
             xml_filepath = f"{jpc.xml_dir}/{name}"
             sh_filepath = f"{jpc.txt_dir}/{name}"
-            with open(xml_filepath, "r") as fp:
-                xml = fp.read()
+            xml = xml_filepath.read_text()
             root = ET.fromstring(xml)
             text = root.findtext("script_contents")
             x_text = text.splitlines(keepends=True)
-            with open(sh_filepath, "r") as fp:
-                tt = fp.read()
-            text = tt.splitlines(keepends=True)
+            text = sh_filepath.read_text().splitlines(keepends=True)
             result = list(d.compare(x_text, text))
             out = []
             # print only changes
