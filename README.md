@@ -14,11 +14,11 @@ _Note for testers: At the moment this is fairly well tested. I'm not quite using
 
 - `add`       used to add a script to the system.
 - `commit`    `git commit` in both directories.
+- `delete`    remove a script in all three spots
 - `down`      pulls all scripts from the server
 - `git`       asks for a string and runs it as a git command in both directories
 - `list`      lists all scripts on the JP server
 - `push`      `git push` in both directories
-- `remove`    remove a script in all three spots
 - `rename`    rename a script in all three spots
 - `up`        uploads all changes and additions to the server
 - `verify`    verify text against XML against Jamf server
@@ -49,11 +49,11 @@ optional arguments:
   -z, --zero            zero parameters for script
 ```
 
-Add goes through the process of adding a script in all the required spots. You end up with an empty script in the scripts folder, an XML file with all the bits filled in and uploaded to the server.
+Add goes through the process of adding a script in all the required spots. You end up with an almost empty script in the scripts folder, an XML file with all the bits filled in and uploaded to the server.
 
 If you don't specify something on the command line you will be prompted for it.
 
-You will also be prompted for the 4th to 11th parameters if you don't specify zero. When you are prompted for parameters entering a blank will stop the process.
+You will also be prompted for the 4th to 11th parameters if you don't specify zero. When you _are_ prompted for parameters entering a blank will stop the process.
 
 If you allow a commit and don't specify a commit message it will be the name of the new file.
 

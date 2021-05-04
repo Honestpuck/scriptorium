@@ -273,10 +273,10 @@ class Scripts:
     def setup_logging():
         """Defines a nicely formatted logger"""
 
-        log_dir = "/usr/local/var/log"
-        if not os.path.isdir(log_dir):
-            os.makedirs(log_dir)
-        LOGFILE = f"{log_dir}/{__program__}.log"
+        log_dir = Path("/usr/local/var/log")
+        if not log_dir.isdir():
+            Path.mkdir(log_dir)
+        LOGFILE = log_dir / f"{__program__}.log"
         ch = logging.handlers.TimedRotatingFileHandler(
             LOGFILE, when="D", interval=1, backupCount=7
         )
@@ -291,11 +291,8 @@ class Scripts:
 
     def both_repos(args, jpc, command, sh=False):
         """ do a shell command in each of our two directories """
-        os.chdir(jpc.txt_dir)
         complete = subprocess.run(
-            command,
-            text=True,
-            shell=sh,
+            command, text=True, shell=sh, cwd=jpc.txt_dir
         )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
@@ -307,11 +304,8 @@ class Scripts:
             print("Text")
             print(" ".join(command))
             info(complete.stderr)
-        os.chdir(jpc.xml_dir)
         complete = subprocess.run(
-            command,
-            text=True,
-            shell=sh,
+            command, text=True, shell=sh, cwd=jpc.xml_dir
         )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
