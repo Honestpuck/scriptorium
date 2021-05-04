@@ -422,19 +422,6 @@ class Scripts:
     def do_commit(args, jpc):
         """ do a git commit """
         """ this commit, and optionally a push, on both directories """
-        # first change to scripts directory
-        os.chdir(jpc.txt_dir)
-        # then see if we do have scripts to be done
-        command = ["git", "diff", "--name-only", "-z"]
-        complete = subprocess.run(command, text=True, capture_output=True)
-        if complete.returncode != 0:
-            # git diff prints a heap so give our user just the first 5 lines
-            lines = complete.stderr.split("\n")
-            for i in lines[0:5]:
-                print(i)
-            raise ScriptError("git diff in scripts directory failed")
-        files = complete.stderr.split("\0")
-        lst = " ".join(files[:-1])  # last one is blank
         Scripts.do_up(args, jpc)
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
@@ -466,11 +453,11 @@ class Scripts:
             text = root.findtext("script_contents")
             xml_filepath = f"{jpc.xml_dir}/{name}"
             sh_filepath = f"{jpc.txt_dir}/{name}"
-            if not args.no_force or not os.path.isfile(xml_filepath):
+            if not args.no_force or not xml_filepath.isdir():
                 info(f"Writing XML {name}")
                 with open(xml_filepath, "w") as fp:
                     fp.write(xml)
-            if not args.no_force or not os.path.isfile(sh_filepath):
+            if not args.no_force or not sh_filepath.isfile():
                 info(f"Writing script {name}")
                 with open(sh_filepath, "w") as fp:
                     fp.write(text)
@@ -504,7 +491,6 @@ class Scripts:
         exit()
 
     def do_push(args, jpc):
-        os.chdir(jpc.txt_dir)
         command = ["git", "push"]
         Scripts.both_repos(args, jpc, command)
 
@@ -512,9 +498,7 @@ class Scripts:
         """ subcommand `delete` """
 
         logger.info(" ".join(argv[1:]))
-        # go to XML dir
-        os.chdir(jpc.xml_dir)
-        xml = ET.parse(args.name)
+        xml = ET.parse(jpc.xml_dir / args.name)
         root = xml.getroot()
         idn = root.findtext("id")
         data = ET.tostring(root)
@@ -537,9 +521,7 @@ class Scripts:
         """ subcommand `rename` """
 
         logger.info(" ".join(argv[1:]))
-        # go to XML dir
-        os.chdir(jpc.xml_dir)
-        xml = ET.parse(args.src)
+        xml = ET.parse(jpc.xml_dir / args.src)
         root = xml.getroot()
         idn = root.findtext("id")
         root.find("name").text = args.dst
@@ -564,11 +546,11 @@ class Scripts:
         """ subcommand `up` """
 
         logger.info(" ".join(argv[1:]))
-        # first change to scripts directory
-        os.chdir(jpc.txt_dir)
         # then see if we do have scripts to be done
         command = ["git", "diff", "--name-only", "-z"]
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, text=True, capture_output=True, cwd=jpc.txt_dir
+        )
         if complete.returncode != 0:
             # git diff prints a heap so give our user just the first 5 lines
             lines = complete.stderr.split("\n")
@@ -616,11 +598,13 @@ class Scripts:
         # get list of script files
         print("Lists:")
         command = ["ls"]
-        os.chdir(jpc.txt_dir)
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, text=True, capture_output=True, cwd=jpc.txt_dir
+            )
         sh = complete.stdout.splitlines()
-        os.chdir(jpc.xml_dir)
-        complete = subprocess.run(command, text=True, capture_output=True)
+        complete = subprocess.run(
+            command, text=True, capture_output=True, jpc.xml_dir
+        )
         xml = complete.stdout.splitlines()
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
         if ret.status_code != 200:
@@ -724,9 +708,9 @@ class Scripts:
         if not Path.is_dir(jpc.txt_dir):
             raise ScriptError(f"directory {jpc.txt_dir} does not exist")
         # get prefs
-        plist = os.path.expanduser(prefs_file)
-        fp = open(plist, "rb")
-        prefs = plistlib.load(fp)
+        plist = Path(prefs_file).expanduser()
+        with plist.open() as fp:
+            prefs = plistlib.load(fp)
         # we only operate on scripts so create a URL for the endpoint
         jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
         # we get a list of categories for `add` so another endpoint
