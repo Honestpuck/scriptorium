@@ -15,6 +15,7 @@ __license__ = "MIT"
 __version__ = "1.0b2"
 
 from pathlib import Path
+import os
 from sys import argv, stderr, stdout
 import argparse
 import plistlib
@@ -26,9 +27,9 @@ import difflib
 import inquirer
 
 # where we stash the XML files
-xml_dir = "~/work/test/xml"
+xml_dir = "~/work/testing scriptorium/XML"
 # where we stash the text files
-txt_dir = "~/work/test/text"
+txt_dir = "~/work/testing scriptorium/text"
 # prefs file
 prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
@@ -273,7 +274,7 @@ class Scripts:
         """Defines a nicely formatted logger"""
 
         log_dir = Path("/usr/local/var/log")
-        if not log_dir.isdir():
+        if not Path.is_dir(log_dir):
             Path.mkdir(log_dir)
         LOGFILE = log_dir / f"{__program__}.log"
         ch = logging.handlers.TimedRotatingFileHandler(
@@ -338,7 +339,9 @@ class Scripts:
         choices = []
         ret = requests.get(jpc.catURL, headers=jpc.hdrs, auth=jpc.auth)
         if ret.status_code != 200:
-            raise ScriptError(f"failed to read categories: {ret.status_code}: {jpc.catURL}")
+            raise ScriptError(
+                f"failed to read categories: {ret.status_code}: {jpc.catURL}"
+            )
         for category in ret.json()["categories"]:
             choices.append(category["name"])
         questions = [
@@ -389,7 +392,7 @@ class Scripts:
         ret = requests.post(url, auth=jpc.auth, data=data)
         if ret.status_code != 201:
             raise ScriptError(
-                f"failed to write to JPC: {ret.status_code}: {jpc.scriptsURL}"
+                f"failed to write to JPC: {ret.status_code}: {url}"
             )
         root = ET.fromstring(ret.text)
         idn = root.find("id").text
@@ -443,15 +446,15 @@ class Scripts:
             xml = ret.text
             root = ET.fromstring(xml)
             text = root.findtext("script_contents")
-            xml_filepath = f"{jpc.xml_dir}/{name}"
-            sh_filepath = f"{jpc.txt_dir}/{name}"
-            if not args.no_force or not xml_filepath.isdir():
+            xml_filepath = Path(f"{jpc.xml_dir}/{name}")
+            sh_filepath = Path(f"{jpc.txt_dir}/{name}")
+            if not args.no_force or not xml_filepath.is_dir():
                 info(f"Writing XML {name}")
                 with xml_filepath.open(mode="w") as fp:
                     fp.write(xml)
-            if not args.no_force or not sh_filepath.isfile():
+            if not args.no_force or not sh_filepath.is_dir():
                 info(f"Writing script {name}")
-                with sh_filepath.open(mode="w"} as fp:
+                with sh_filepath.open(mode="w") as fp:
                     fp.write(text)
         exit()
 
@@ -552,9 +555,10 @@ class Scripts:
         if complete.stderr == "":
             return
         # we have work to do
+        # git diff --name-only -z gives us a list of
+        # the changed files with a null after each so ...
         files = complete.stderr.split("\0")
-        lst = " ".join(files[:-1])  # last one is blank
-        info(f"Processing {lst}")
+        info(f"Processing {files}")
         for fn in files:
             if fn == "":
                 continue
@@ -562,8 +566,7 @@ class Scripts:
             logger.debug(f"Processing {fn}")
             # first get our script
             txt_file = jpc.txt_dir / fn
-            with jpc.txt_dir.open(mode="r") as fp:
-                scrpt = fp.read()
+            scrpt = jpc.txt_dir.read_text()
             x_file = jpc.xml_dir / fn
             xml = ET.parse(x_file)
             root = xml.getroot()
@@ -591,10 +594,10 @@ class Scripts:
         command = ["ls"]
         complete = subprocess.run(
             command, text=True, capture_output=True, cwd=jpc.txt_dir
-            )
+        )
         sh = complete.stdout.splitlines()
         complete = subprocess.run(
-            command, text=True, capture_output=True, jpc.xml_dir
+            command, text=True, capture_output=True, cwd=jpc.xml_dir
         )
         xml = complete.stdout.splitlines()
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
@@ -698,9 +701,9 @@ class Scripts:
         if not Path.is_dir(jpc.txt_dir):
             raise ScriptError(f"directory {jpc.txt_dir} does not exist")
         # get prefs
-        plist = Path(prefs_file).expanduser()
-        with plist.open() as fp:
-            prefs = plistlib.load(fp)
+        plist = os.path.expanduser(prefs_file)
+        fp = open(plist, "rb")
+        prefs = plistlib.load(fp)
         # we only operate on scripts so create a URL for the endpoint
         jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
         # we get a list of categories for `add` so another endpoint
