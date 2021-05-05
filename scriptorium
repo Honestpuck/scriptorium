@@ -493,8 +493,9 @@ class Scripts:
         """ subcommand `delete` """
 
         logger.info(" ".join(argv[1:]))
-        xml = ET.parse(jpc.xml_dir / args.name)
-        root = xml.getroot()
+        xml_filepath = jpc.xml_dir / args.name
+        x = xml_filepath.read_text()
+        root = ET.fromstring(x)
         idn = root.findtext("id")
         data = ET.tostring(root)
         url = f"{jpc.scriptsURL}/id/{idn}"
@@ -516,18 +517,22 @@ class Scripts:
         """ subcommand `rename` """
 
         logger.info(" ".join(argv[1:]))
-        xml = ET.parse(jpc.xml_dir / args.src)
-        root = xml.getroot()
+        xml_filepath = jpc.xml_dir / args.src
+        x = xml_filepath.read_text()
+        root = ET.fromstring(x)
         idn = root.findtext("id")
         root.find("name").text = args.dst
         root.find("script_contents_encoded").text = ""
         data = ET.tostring(root)
+        with xml_filepath.open(mode="w") as fp:
+            fp.write(str(data))
         url = f"{jpc.scriptsURL}/id/{idn}"
         ret = requests.put(url, auth=jpc.auth, data=data)
         if ret.status_code != 201:
             raise ScriptError(
                 f"failed to write to JPC: {ret.status_code}: {url}"
             )
+
         command = ["git", "mv", Path(args.src), Path(args.dst)]
         Scripts.both_repos(args, jpc, command)
         if args.dont_commit:
