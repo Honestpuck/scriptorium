@@ -417,7 +417,7 @@ class Scripts:
         """ do a git commit """
         """ this commit, and optionally a push, on both directories """
 
-        Scripts.do_up(args, jpc)
+        lst = Scripts.do_up(args, jpc)
         command = ["git", "add", "*"]
         Scripts.both_repos(args, jpc, command)
         msg = args.message if args.message else lst
@@ -448,11 +448,11 @@ class Scripts:
             text = root.findtext("script_contents")
             xml_filepath = Path(f"{jpc.xml_dir}/{name}")
             sh_filepath = Path(f"{jpc.txt_dir}/{name}")
-            if not args.no_force or not xml_filepath.is_dir():
+            if not args.no_force or not xml_filepath.is_file():
                 info(f"Writing XML {name}")
                 with xml_filepath.open(mode="w") as fp:
                     fp.write(xml)
-            if not args.no_force or not sh_filepath.is_dir():
+            if not args.no_force or not sh_filepath.is_file():
                 info(f"Writing script {name}")
                 with sh_filepath.open(mode="w") as fp:
                     fp.write(text)
@@ -557,24 +557,22 @@ class Scripts:
             for i in lines[0:5]:
                 print(i)
             raise ScriptError("git diff in scripts directory failed")
-        if complete.stderr == "":
-            return
+        if complete.stdout == "":
+            return "empty"
         # we have work to do
         # git diff --name-only -z gives us a list of
         # the changed files with a null after each so ...
-        files = complete.stderr.split("\0")
-        info(f"Processing {files}")
+        files = complete.stdout.split("\0")
         for fn in files:
             if fn == "":
                 continue
-            print(f"Processing {fn}")
-            logger.debug(f"Processing {fn}")
+            info(f"Processing {fn}")
             # first get our script
             txt_file = jpc.txt_dir / fn
-            scrpt = jpc.txt_dir.read_text()
+            scrpt = txt_file.read_text()
             x_file = jpc.xml_dir / fn
-            xml = ET.parse(x_file)
-            root = xml.getroot()
+            xml = x_file.read_text()
+            root = ET.fromstring(xml)
             root.find("script_contents").text = scrpt
             # blank the encoded field as you can't have both in an upload
             root.find("script_contents_encoded").text = ""
@@ -588,8 +586,12 @@ class Scripts:
                     f"failed to write to JPC: {ret.status_code}: {url}"
                 )
                 exit(1)
-            xml.write(x_file)
-        return
+            # since Jamf will give us <script_encoded> get our record again
+            # so a verify will be identical
+            ret = requests.get(url, auth=jpc.auth)
+            xml = ret.text
+            x_file.write_text(xml)
+        return files.join(" ")
 
     def do_verify(args, jpc):
         """ verify scripts, XML and server against each other """
@@ -650,6 +652,7 @@ class Scripts:
             if args.script and name != args.script:
                 continue
             print("*", end="")
+            # info(f"Verifying {name}")
             stdout.flush()
             idn = script["id"]
             ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
@@ -658,8 +661,8 @@ class Scripts:
                     f"get script {name} failed with error: {ret.status_code}"
                 )
             server = ret.text.splitlines(keepends=True)
-            xml_filepath = f"{jpc.xml_dir}/{name}"
-            sh_filepath = f"{jpc.txt_dir}/{name}"
+            xml_filepath = jpc.xml_dir / name
+            sh_filepath = jpc.txt_dir / name
             xml = xml_filepath.read_text()
             root = ET.fromstring(xml)
             text = root.findtext("script_contents")

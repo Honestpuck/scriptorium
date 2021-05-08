@@ -30,3 +30,5 @@ Starting from a blank slate
  - scriptorium up
  - scriptorium commit -m "edit of <name>"
    - check correct script everywhere
+
+
