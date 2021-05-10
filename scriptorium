@@ -591,7 +591,7 @@ class Scripts:
             ret = requests.get(url, auth=jpc.auth)
             xml = ret.text
             x_file.write_text(xml)
-        return files.join(" ")
+        return " ".join(files)
 
     def do_verify(args, jpc):
         """ verify scripts, XML and server against each other """
