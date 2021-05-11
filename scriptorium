@@ -401,7 +401,9 @@ class Scripts:
             raise ScriptError(
                 f"script get failed: {ret.status_code} : {ret.url}"
             )
-        xml = ret.text
+        root = ET.fromstring(ret.text)
+        ET.indent(root)
+        xml = ET.tostring(root)
         xml_filepath = jpc.xml_dir / filename
         sh_filepath = jpc.txt_dir / filename
         with xml_filepath.open(mode="w") as fp:

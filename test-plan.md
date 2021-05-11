@@ -11,7 +11,7 @@ Starting from a blank slate
  - scriptorium down (doesn't commit) Y
  - scriptorium commit -m "first commit"
  - scriptorium push Y
- - scriptorium add --don't commit --zero Y
+ - scriptorium add --dont-commit --zero Y
    - name = "lots of words.sh"
  - scriptorium commit --push -m "added lots of words.sh" Y
    - check everywhere for "lots of words.sh"
