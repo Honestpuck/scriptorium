@@ -297,7 +297,8 @@ class Scripts:
         )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
-            lines = complete.stderr.split("\n")
+            out = f"{complete.stderr}{complete.stdout}"
+            lines = out.split("\n")
             for i in lines[0:5]:
                 print(i)
             raise ScriptError(f"text directory failed: {command}")
@@ -310,7 +311,8 @@ class Scripts:
         )
         if complete.returncode != 0:
             # git can print a heap so give our user just the first 5 lines
-            lines = complete.stderr.split("\n")
+            out = f"{complete.stderr}{complete.stdout}"
+            lines = out.split("\n")
             for i in lines[0:5]:
                 print(i)
             raise ScriptError(f"XML directory failed: {command}")

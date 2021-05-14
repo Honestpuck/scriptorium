@@ -55,6 +55,8 @@ If you don't specify something on the command line you will be prompted for it.
 
 You will also be prompted for the 4th to 11th parameters if you don't specify zero. When you _are_ prompted for parameters entering a blank will stop the process.
 
+By default it will do a commit but not a push.
+
 If you allow a commit and don't specify a commit message it will be the name of the new file.
 
 ### `commit`
@@ -183,13 +185,22 @@ Verify does a compare of the two directories and the server. The quick option ju
 
 `scriptorium` requires the `requests` and `inquirer` libraries. Make sure they are installed.
 
-Then you will want to get the git bits working. Create the two empty repositories in your git store (such as Github, though if you use Github make them private).
+I assume that you are using Github and have installed the `gh` tool using Homebrew (`brew install gh`):
 
-Now clone the two repos down to your Mac. You will probably get a warning from git that you have pulled down an empty repo.
+```
+cd work
+mkdir scripts; cd scripts
+gh repo create text --confirm --private --enable-wiki=false --enable-issues=false
+gh repo create XML --confirm --private --enable-wiki=false --enable-issues=false
+```
+
+The two `gh` commands create a local directory and initialize it for git and also creates the upstream repo on Github.
+
+Notice that I have allowed issues for the `text` directory but not the `XML` directory. That's so you can share access to the `text` directory with your colleagues and you can all open issues for bugs in your scripts then close them with a commit (if your commit message includes `#<issue number>` then it will get associated with the issue automatically).
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 
-Put `scriptorium` somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
+Link `scriptorium` into somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
 
