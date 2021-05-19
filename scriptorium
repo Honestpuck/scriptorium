@@ -409,7 +409,7 @@ class Scripts:
         xml_filepath = jpc.xml_dir / filename
         sh_filepath = jpc.txt_dir / filename
         with xml_filepath.open(mode="w") as fp:
-            fp.write(xml)
+            fp.write(xml.decode())
         with sh_filepath.open(mode="w") as fp:
             fp.write(f"# {filename}")
         args.message = f"adding {filename}"
