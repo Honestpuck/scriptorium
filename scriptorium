@@ -27,9 +27,9 @@ import difflib
 import inquirer
 
 # where we stash the XML files
-xml_dir = "~/work/testing scriptorium/XML"
+xml_dir = "~/work/test/XML"
 # where we stash the text files
-txt_dir = "~/work/testing scriptorium/text"
+txt_dir = "~/work/test/text"
 # prefs file
 prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
 
