@@ -661,6 +661,9 @@ class Scripts:
             print("XML = Jamf")
         if args.quick:
             exit()
+
+        # main loop
+
         for script in ret.json()["scripts"]:
             name = script["name"]
             if args.script and name != args.script:
@@ -669,21 +672,15 @@ class Scripts:
             # info(f"Verifying {name}")
             stdout.flush()
             idn = script["id"]
-            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
-            if ret.status_code != 200:
-                raise ScriptError(
-                    f"get script {name} failed with error: {ret.status_code}"
-                )
-            server = ret.text.splitlines(keepends=True)
             xml_filepath = jpc.xml_dir / name
             sh_filepath = jpc.txt_dir / name
-
             xml = xml_filepath.read_text()
+            text = sh_filepath.read_text()
+            text = text.splitlines()
             root = ET.fromstring(xml)
-            text = root.findtext("script_contents")
-            x_text = text.splitlines(keepends=True)
-            text = sh_filepath.read_text().splitlines(keepends=True)
-            result = list(d.compare(x_text, text))
+            xml_text = root.findtext("script_contents")
+            xml_text = xml_text.splitlines()
+            result = list(d.compare(xml_text, text))
             out = []
             # print only changes
             for line in result:
@@ -696,8 +693,18 @@ class Scripts:
                         print(line)
             elif args.script:
                 print(f"\n{name}: XML = text")
-            xml = xml.splitlines(keepends=True)
-            result = list(d.compare(xml, server))
+            ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
+            if ret.status_code != 200:
+                raise ScriptError(
+                    f"get script {name} failed with error: {ret.status_code}"
+                )
+            root = ET.fromstring(ret.text)
+            ET.indent(root)
+            jamf = ET.tostring(root)
+            jamf = jamf.decode()
+            jamf = jamf.splitlines()
+            xml = xml.splitlines()[1:]
+            result = list(d.compare(xml, jamf))
             out = []
             # print only changes
             for line in result:
