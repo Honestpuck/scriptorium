@@ -181,6 +181,9 @@ class Parser:
             help="don't force overwrite of existing script or XML file",
             action="store_true",
         )
+        parser_ver.add_argument(
+            "-s", "--script", help="specify a single script to check"
+        )
         parser_down.set_defaults(func=Scripts.do_down)
 
         #
@@ -441,6 +444,8 @@ class Scripts:
         for script in ret.json()["scripts"]:
             idn = script["id"]
             name = script["name"]
+            if args.script and name != args.script:
+                continue
             # we want XML so don't use the header
             ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
             if ret.status_code != 200:
@@ -599,9 +604,7 @@ class Scripts:
             xml = ret.text
             root = ET.fromstring(xml)
             ET.indent(root)
-            xml = b'<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
-                root
-            )
+            xml = ET.tostring(root)
             x_file.write_text(xml.decode())
         return " ".join(files)
 
