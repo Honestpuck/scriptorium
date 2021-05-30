@@ -181,7 +181,7 @@ class Parser:
             help="don't force overwrite of existing script or XML file",
             action="store_true",
         )
-        parser_ver.add_argument(
+        parser_down.add_argument(
             "-s", "--script", help="specify a single script to check"
         )
         parser_down.set_defaults(func=Scripts.do_down)
