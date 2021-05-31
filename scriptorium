@@ -683,6 +683,9 @@ class Scripts:
             root.find("script_contents_encoded").text = ""
             xml_text = root.findtext("script_contents")
             xml_text = xml_text.splitlines()
+            xml = ET.tostring(root)
+            xml = xml.decode()
+            xml = xml.splitlines()
             result = list(d.compare(xml_text, text))
             out = []
             # print only changes
@@ -708,7 +711,6 @@ class Scripts:
             jamf = ET.tostring(root)
             jamf = jamf.decode()
             jamf = jamf.splitlines()
-            xml = xml.splitlines()
             result = list(d.compare(xml, jamf))
             out = []
             # print only changes
