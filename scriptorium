@@ -679,6 +679,8 @@ class Scripts:
             text = sh_filepath.read_text()
             text = text.splitlines()
             root = ET.fromstring(xml)
+            # removing encoded as it will only vary if contents vary
+            root.find("script_contents_encoded").text = ""
             xml_text = root.findtext("script_contents")
             xml_text = xml_text.splitlines()
             result = list(d.compare(xml_text, text))
@@ -700,6 +702,8 @@ class Scripts:
                     f"get script {name} failed with error: {ret.status_code}"
                 )
             root = ET.fromstring(ret.text)
+            # removing encoded as it will only vary if contents vary
+            root.find("script_contents_encoded").text = ""
             ET.indent(root)
             jamf = ET.tostring(root)
             jamf = jamf.decode()
