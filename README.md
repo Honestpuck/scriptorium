@@ -185,24 +185,15 @@ Verify does a compare of the two directories and the server. The quick option ju
 
 `scriptorium` requires the `requests` and `inquirer` libraries. Make sure they are installed.
 
-I assume that you are using Github and have installed the `gh` tool using Homebrew (`brew install gh`):
+At that point you need to create the repositories, `text` and `xml`. Create them as empty (and private if you are using a public repo store such as Github).
 
-```
-cd work
-mkdir scripts; cd scripts
-gh repo create text --confirm --private --enable-wiki=false --enable-issues=false
-gh repo create XML --confirm --private --enable-wiki=false --enable-issues=false
-```
-
-The two `gh` commands create a local directory and initialize it for git and also creates the upstream repo on Github.
-
-Notice that I have allowed issues for the `text` directory but not the `XML` directory. That's so you can share access to the `text` directory with your colleagues and you can all open issues for bugs in your scripts then close them with a commit (if your commit message includes `#<issue number>` then it will get associated with the issue automatically).
+Now create a directory `scripts` on your computer, cd into it and perform a git clone to pull down both repositories. Git will tell you you just pulled blank repositories.
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
 
 Link `scriptorium` into somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
-Now run `scriptorium down` and all the scripts will be populated on your Mac. When you make changes to the scripts in the text directory you can upload them to your JSS with `scriptorium up`.
+Now run `scriptorium down` and all the scripts will be populated on your Mac. Now send them to the upstream repositories with `scriptorium commit --message "First commit" --push`
 
 The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places. It will be as good as empty, it's contents are set to `# <name>` where <name> is the name you have given it.
 
