@@ -193,7 +193,7 @@ Set the variables at the top of scriptorium to point to the two directories and 
 
 Link `scriptorium` into somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
-Now run `scriptorium down` and all the scripts will be populated on your Mac. Now send them to the upstream repositories with `scriptorium commit --message "First commit" --push`
+Now run `scriptorium down` and all the scripts will be populated on your Mac. Now send them to the upstream repositories with `scriptorium commit --message "First commit" --push`. You are now at point where you can use the system.
 
 The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places. It will be as good as empty, it's contents are set to `# <name>` where <name> is the name you have given it.
 
@@ -205,11 +205,21 @@ The remove and rename commands do a commit by default at the moment. The problem
 
 The best way of solving this dilemma would be for all commits to be preceded by an up command within scriptorium. Since remove, rename and add already modify the server this problem is only triggered when you edit a script so this seems acceptable and has been implemented.
 
+The best way to use the system is to run it from the directory that holds the text files. If you do that in a shell that has a git add on you can have the prompt give you useful information. It also means you can use file name completion when you need to specify a file. I also have Visual Studio Code open to the same folder, adding the "GitLens" extension to VS Code gives you good feedback on when various changes were made to your script.
+
+#### Adding a script
+
+The process of adding a script starts with running `scriptorium add`. I usually put `-d` so that the system doesn't do a commit so I can edit the script before it goes into Jam Pro. After the add completes I can edit the stub in my editor and when ready for final testing run `scriptorium commit -m "First commit for script something.sh" --push`. That propagates the new script through the system.
+#### Editing a script
+
+Editing a script just means opening it in your editor of choice. Once you've made your changes and saved thrm in your editor the process is almost identical to adding a script. Run `scriptorium commit -m "Fixed widgets in script acme.sh" --push`
 ### Still to be done
 
 On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
 
 Some notes on best practices and work methods should also appear at some point. Contributions to these would be greatly appreciated.
+
+Modification of the script to produce another to handle extension attributes instead of scripts is in the planning stages.
 
 ### Suggestions 
 
