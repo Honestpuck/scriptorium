@@ -103,9 +103,10 @@ optional arguments:
   -d, --dont-commit     don't do a commit
   -m MESSAGE, --message MESSAGE
                         set commit message
+  -s SCRIPT, --script SCRIPT download just one script
 ```
 
-This downloads all the scripts from the JPC server copying over the current contents 
+This downloads all the scripts from the JPC server copying over the current contents.
 
 ### `git`
 
