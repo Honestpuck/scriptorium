@@ -8,7 +8,7 @@ With the system installed you can make changes to the scripts in the text direct
 
 The basic structure is `scriptorium <command>` some with required parameters and command options. 
 
-_Note for testers: At the moment this is fairly well tested. I'm not quite using this script in production, YMMV._
+_Note for testers: At the moment this is fairly well tested. It has just gone into production, YMMV._
 
 ## Commands
 
