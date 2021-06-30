@@ -184,6 +184,18 @@ class Parser:
         parser_down.add_argument(
             "-s", "--script", help="specify a single script to check"
         )
+        parser_down.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        parser_down.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+
         parser_down.set_defaults(func=Scripts.do_down)
 
         #

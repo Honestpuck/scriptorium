@@ -128,7 +128,7 @@ optional arguments:
   -h, --help  show this help message and exit
 ```
 
-It's simple, no arguments. Just lists the scripts on the server
+It's simple, no arguments. Just lists the scripts on the server.
 
 ### `push`
 
