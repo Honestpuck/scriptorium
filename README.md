@@ -8,7 +8,7 @@ With the system installed you can make changes to the scripts in the text direct
 
 The basic structure is `scriptorium <command>` some with required parameters and command options. 
 
-_Note for testers: At the moment this is fairly well tested. It has just gone into production, YMMV._
+_Note: At the moment this is fairly well tested. It has just gone into production, YMMV. Bug reports and change suggestions gratefully accepted_
 
 ## Commands
 
@@ -99,10 +99,6 @@ usage: scriptorium down [-h] [-n] [-p | -d] [-m MESSAGE]
 optional arguments:
   -h, --help            show this help message and exit
   -n, --no-force        don't force overwrite of existing script or XML file
-  -p, --push            do a git push after commit
-  -d, --dont-commit     don't do a commit
-  -m MESSAGE, --message MESSAGE
-                        set commit message
   -s SCRIPT, --script SCRIPT download just one script
 ```
 
