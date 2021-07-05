@@ -12,7 +12,7 @@ __author__ = "Tony Williams"
 __email__ = "tonyw@honestpuck.com"
 __copyright__ = "Copyright (c) 2021 Tony Williams"
 __license__ = "MIT"
-__version__ = "1.0"
+__version__ = "1.0b2"
 
 from pathlib import Path
 import os
@@ -184,10 +184,22 @@ class Parser:
         parser_down.add_argument(
             "-s", "--script", help="specify a single script to check"
         )
+        parser_down.add_argument(
+            "-p",
+            "--push",
+            help="do a git push after commit",
+            action="store_true",
+        )
+        parser_down.add_argument(
+            "-m",
+            "--message",
+            help="set commit message",
+        )
+
         parser_down.set_defaults(func=Scripts.do_down)
 
         #
-        # create parser for `git`
+        # creeate parser for `git`
         #
         parser_git = subparsers.add_parser(
             "git", help="asks for a string and runs it as a git command"
@@ -229,10 +241,8 @@ class Parser:
             action="store_true",
         )
         parser_re.add_argument("-m", "--message", help="set commit message")
-        parser_re.add_argument(
-            "src", help="current name of script", required=True
-        )
-        parser_re.add_argument("dst", help="new name of script", required=True)
+        parser_re.add_argument("src", help="current name of script")
+        parser_re.add_argument("dst", help="new name of script")
         parser_re.set_defaults(func=Scripts.do_rename)
 
         #
@@ -351,7 +361,6 @@ class Scripts:
             )
         for category in ret.json()["categories"]:
             choices.append(category["name"])
-        # build the question
         questions = [
             inquirer.List(
                 "category",
@@ -359,7 +368,6 @@ class Scripts:
                 choices=choices,
             )
         ]
-        # ask the question
         answer = inquirer.prompt(questions)
         category = answer["category"]
         if not (args.after or args.before or args.reboot):
@@ -414,10 +422,10 @@ class Scripts:
         ET.indent(root)
         xml = ET.tostring(root)
         xml_filepath = jpc.xml_dir / filename
-        txt_filepath = jpc.txt_dir / filename
+        sh_filepath = jpc.txt_dir / filename
         with xml_filepath.open(mode="w") as fp:
             fp.write(xml.decode())
-        with txt_filepath.open(mode="w") as fp:
+        with sh_filepath.open(mode="w") as fp:
             fp.write(f"# {filename}")
         args.message = f"adding {filename}"
         if args.dont_commit:
@@ -435,7 +443,8 @@ class Scripts:
         command = ["git", "commit", "-m", msg]
         Scripts.both_repos(args, jpc, command)
         if args.push:
-            Scripts.do_push(args, jpc)
+            command = ["git", "push"]
+            Scripts.both_repos(args, jpc, command)
 
     def do_down(args, jpc):
         """ subcommand `down` """
@@ -461,15 +470,16 @@ class Scripts:
             ET.indent(root)
             xml = ET.tostring(root)
             xml_filepath = Path(f"{jpc.xml_dir}/{name}")
-            txt_filepath = Path(f"{jpc.txt_dir}/{name}")
+            sh_filepath = Path(f"{jpc.txt_dir}/{name}")
             if not args.no_force or not xml_filepath.is_file():
                 info(f"Writing XML {name}")
                 with xml_filepath.open(mode="w") as fp:
                     fp.write(xml.decode())
-            if not args.no_force or not txt_filepath.is_file():
-                info(f"Writing text {name}")
-                with txt_filepath.open(mode="w") as fp:
+            if not args.no_force or not sh_filepath.is_file():
+                info(f"Writing script {name}")
+                with sh_filepath.open(mode="w") as fp:
                     fp.write(text)
+        exit()
 
     def do_git(args, jpc):
         """ subcommand `git` """
@@ -481,6 +491,7 @@ class Scripts:
         command = f"git {string}".split(" ")
         logger.info(f"Git command: {command}")
         Scripts.both_repos(args, jpc, command)
+        exit()
 
     def do_list(args, jpc):
         """ subcommand `list` """
@@ -495,6 +506,7 @@ class Scripts:
             name = script["name"]
             print(f"{idn}:\t{name}")
         logger.info("list succeeded")
+        exit()
 
     def do_push(args, jpc):
         command = ["git", "push"]
@@ -518,9 +530,11 @@ class Scripts:
         f = Path(args.name)
         command = ["git", "rm", f]
         Scripts.both_repos(args, jpc, command, sh=False)
+        if args.dont_commit:
+            exit()
         args.message = f"remove {args.name}"
-        if not args.dont_commit:
-            Scripts.do_commit(args, jpc)
+        Scripts.do_commit(args, jpc)
+        exit()
 
     def do_rename(args, jpc):
         """ subcommand `rename` """
@@ -531,7 +545,6 @@ class Scripts:
         root = ET.fromstring(x)
         idn = root.findtext("id")
         root.find("name").text = args.dst
-        # blank the encoded field as you can't have both in an upload
         root.find("script_contents_encoded").text = ""
         ET.indent(root)
         data = ET.tostring(root)
@@ -550,6 +563,7 @@ class Scripts:
         args.message = f"{args.src} to {args.dst}"
         Scripts.do_commit(args, jpc)
         logger.info("remove succeeded")
+        exit()
 
     def do_up(args, jpc):
         """ subcommand `up` """
@@ -578,11 +592,11 @@ class Scripts:
             info(f"Processing {fn}")
             # first get our script
             txt_file = jpc.txt_dir / fn
-            txt = txt_file.read_text()
+            scrpt = txt_file.read_text()
             x_file = jpc.xml_dir / fn
             xml = x_file.read_text()
             root = ET.fromstring(xml)
-            root.find("script_contents").text = txt
+            root.find("script_contents").text = scrpt
             # blank the encoded field as you can't have both in an upload
             root.find("script_contents_encoded").text = ""
             idn = root.findtext("id")
@@ -660,7 +674,9 @@ class Scripts:
             print("XML = Jamf")
         if args.quick:
             exit()
-        # main loop from here down
+
+        # main loop
+
         for script in ret.json()["scripts"]:
             name = script["name"]
             if args.script and name != args.script:
@@ -670,9 +686,9 @@ class Scripts:
             stdout.flush()
             idn = script["id"]
             xml_filepath = jpc.xml_dir / name
-            txt_filepath = jpc.txt_dir / name
+            sh_filepath = jpc.txt_dir / name
             xml = xml_filepath.read_text()
-            text = txt_filepath.read_text()
+            text = sh_filepath.read_text()
             text = text.splitlines()
             root = ET.fromstring(xml)
             # removing encoded as it will only vary if contents vary
@@ -720,6 +736,7 @@ class Scripts:
                         print(line)
             elif args.script:
                 print(f"\n{name}: XML = Jamf")
+        exit()
 
     def main():
         Scripts.setup_logging()
@@ -751,9 +768,11 @@ class Scripts:
             fred.parser.print_help()
             exit(1)
         args = fred.parser.parse_args()
-        args.func(args, jpc)
-
-    exit()
+        # we never return from below call
+        if args:
+            args.func(args, jpc)
+        else:
+            exit()
 
 
 if __name__ == "__main__":
