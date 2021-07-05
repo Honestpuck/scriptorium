@@ -186,13 +186,34 @@ At that point you need to create the repositories, `text` and `xml`. Create them
 
 Now create a directory `scripts` on your computer, cd into it and perform a git clone to pull down both repositories. Git will tell you you just pulled blank repositories.
 
-Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the AutoPkg prefs.
+Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the jss_importer prefs in the AutoPkg prefs file. Here is the minimum required plist:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_PASSWORD</key>
+	<string>password</string>
+	<key>API_USERNAME</key>
+	<string>account</string>
+	<key>JSS_URL</key>
+	<string>https://example.jamfcloud.com</string>
+</dict>
+</plist>
+```
+
+You can create it or add it to your existing AutoPkg preference file with:
+```
+defaults write com.github.autopkg.plist API_PASSWORD 'password'
+defaults write com.github.autopkg.plist USERNAME 'account'
+defaults write com.github.autopkg.plist JSS_URL 'https://example.jamfcloud.com'
+```
 
 Link `scriptorium` into somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. Now send them to the upstream repositories with `scriptorium commit --message "First commit" --push`. You are now at point where you can use the system.
 
-The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places. It will be as good as empty, it's contents are set to `# <name>` where <name> is the name you have given it.
+The other important command is `add`. So that you can keep everything in sync when you want to add a new script to the system you use `scriptorium add` and the script will spring into existence in all three places. It will be as good as empty, it's contents are set to `# <name>` where `<name>` is the name you have given it.
 
 The file `_scriptorium` is a bash command completion for scriptorium. See https://github.com/Honestpuck/apple_complete for instructions on how to install it for your shell.
 

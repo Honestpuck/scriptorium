@@ -531,6 +531,7 @@ class Scripts:
         root = ET.fromstring(x)
         idn = root.findtext("id")
         root.find("name").text = args.dst
+        # blank the encoded field as you can't have both in an upload
         root.find("script_contents_encoded").text = ""
         ET.indent(root)
         data = ET.tostring(root)
@@ -577,11 +578,11 @@ class Scripts:
             info(f"Processing {fn}")
             # first get our script
             txt_file = jpc.txt_dir / fn
-            scrpt = txt_file.read_text()
+            txt = txt_file.read_text()
             x_file = jpc.xml_dir / fn
             xml = x_file.read_text()
             root = ET.fromstring(xml)
-            root.find("script_contents").text = scrpt
+            root.find("script_contents").text = txt
             # blank the encoded field as you can't have both in an upload
             root.find("script_contents_encoded").text = ""
             idn = root.findtext("id")
@@ -659,9 +660,7 @@ class Scripts:
             print("XML = Jamf")
         if args.quick:
             exit()
-
-        # main loop
-
+        # main loop from here down
         for script in ret.json()["scripts"]:
             name = script["name"]
             if args.script and name != args.script:
@@ -752,9 +751,8 @@ class Scripts:
             fred.parser.print_help()
             exit(1)
         args = fred.parser.parse_args()
-
-    if args:
         args.func(args, jpc)
+
     exit()
 
 
