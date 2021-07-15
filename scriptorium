@@ -458,6 +458,9 @@ class Scripts:
             name = script["name"]
             if args.script and name != args.script:
                 continue
+            if "/" in name:
+                print(f"Illegal character '/' in script {name}:{idn}")
+                continue
             # we want XML so don't use the header
             ret = requests.get(f"{jpc.scriptsURL}/id/{idn}", auth=jpc.auth)
             if ret.status_code != 200:
