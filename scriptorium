@@ -288,7 +288,7 @@ class Scripts:
     def setup_logging():
         """Defines a nicely formatted logger"""
 
-        log_dir = Path("/usr/local/var/log")
+        log_dir = Path("~/Library/Logs:").expanduser()
         if not Path.is_dir(log_dir):
             Path.mkdir(log_dir)
         LOGFILE = log_dir / f"{__program__}.log"

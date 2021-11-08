@@ -29,7 +29,9 @@ _Note: Bug reports and change suggestions gratefully accepted_
 
 `scriptorium` requires the `requests` and `inquirer` libraries. They can be installed by running `pip3 install requests` and `pip3 install inquirer`.
 
-At that point you need to create the repositories, `text` and `xml`. Create them as empty (and private if you are using a public repo store such as Github).
+Now pull down a copy of this repo so you can keep it up to date easily. `git clone git@github.com:Honestpuck/scriptorium.git` will do the trick.
+
+At this point you need to create the repositories, `text` and `xml` in your git store. Create them as empty (and private if you are using a public repo store such as Github).
 
 Now create a directory `scripts` on your computer, cd into it and perform a git clone to pull down both repositories. Git will tell you you just pulled blank repositories.
 
@@ -56,6 +58,16 @@ defaults write com.github.autopkg.plist USERNAME 'account'
 defaults write com.github.autopkg.plist JSS_URL 'https://example.jamfcloud.com'
 ```
 
+You can find the spot to set the variables in scriptorium, it looks like:
+```
+# where we stash the XML files
+xml_dir = "~/work/test/XML"
+# where we stash the text files
+txt_dir = "~/work/test/text"
+# prefs file
+prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
+```
+
 Link `scriptorium` into somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
 
 Now run `scriptorium down` and all the scripts will be populated on your Mac. Now send them to the upstream repositories with `scriptorium commit --message "First commit" --push`. You are now at point where you can use the system.
@@ -64,9 +76,9 @@ The other important command is `add`. So that you can keep everything in sync wh
 
 The file `_scriptorium` is a bash command completion for scriptorium. See https://github.com/Honestpuck/apple_complete for instructions on how to install it for your shell.
 
-### Work practices
+## Work practices
 
-The remove and rename commands do a commit by default at the moment. The problem in doing a commit is that the up command relies on changed files not being committed until after up.
+The delete and rename commands do a commit by default at the moment. The problem in doing a commit is that the up command relies on changed files not being committed until after up.
 
 The best way of solving this dilemma would be for all commits to be preceded by an up command within scriptorium. Since remove, rename and add already modify the server this problem is only triggered when you edit a script so this seems acceptable and has been implemented.
 
@@ -77,7 +89,7 @@ You have to run the system from the directory that holds the text files. If you 
 The process of adding a script starts with running `scriptorium add`. I usually put `-d` so that the system doesn't do a commit so I can edit the script before it goes into Jam Pro. After the add completes I can edit the stub in my editor and when ready for final testing run `scriptorium commit -m "First commit for script something.sh" --push`. That propagates the new script through the system.
 #### Editing a script
 
-Editing a script just means opening it in your editor of choice. Once you've made your changes and saved thrm in your editor the process is almost identical to adding a script. Run `scriptorium commit -m "Fixed widgets in script acme.sh" --push`
+Editing a script just means opening it in your editor of choice. Once you've made your changes and saved them in your editor the process is almost identical to adding a script. Run `scriptorium commit -m "Fixed widgets in script acme.sh" --push`
 ### Still to be done
 
 On the roadmap is a command `modify` which will modify the aspects of the script record in Jamf that aren't the actual script such as notes and parameters.
