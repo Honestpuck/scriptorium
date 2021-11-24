@@ -62,7 +62,7 @@ def info(msg):
 
 
 class Jamf:
-    """ Exists to carry some variables"""
+    """Exists to carry some variables"""
 
     def __init__(self):
         self.scriptsURL = ""  # URL for JPC scripts
@@ -74,10 +74,10 @@ class Jamf:
 
 
 class Parser:
-    """ Parses the command line and runs the right function """
+    """Parses the command line and runs the right function"""
 
     def __init__(self):
-        """ build our command line parser """
+        """build our command line parser"""
         parser = argparse.ArgumentParser(
             epilog="for command help: `scriptorium <command> -h`"
         )
@@ -283,12 +283,12 @@ class ScriptError(Exception):
 
 
 class Scripts:
-    """ doing all the work """
+    """doing all the work"""
 
     def setup_logging():
         """Defines a nicely formatted logger"""
 
-        log_dir = Path("~/Library/Logs:").expanduser()
+        log_dir = Path("~/Library/Logs").expanduser()
         if not Path.is_dir(log_dir):
             Path.mkdir(log_dir)
         LOGFILE = log_dir / f"{__program__}.log"
@@ -305,7 +305,7 @@ class Scripts:
         logger.setLevel(LOGLEVEL)
 
     def both_repos(args, jpc, command, sh=False):
-        """ do a shell command in each of our two directories """
+        """do a shell command in each of our two directories"""
 
         complete = subprocess.run(
             command, text=True, shell=sh, cwd=jpc.txt_dir
@@ -337,7 +337,7 @@ class Scripts:
             info(complete.stderr)
 
     def do_add(args, jpc):
-        """ add in all three spots """
+        """add in all three spots"""
 
         filename = args.filename if args.filename else input("Filename: ")
         notes = args.notes if args.notes else input("Notes: ")
@@ -433,7 +433,7 @@ class Scripts:
         Scripts.do_commit(args, jpc)
 
     def do_commit(args, jpc):
-        """ do a git commit """
+        """do a git commit"""
         """ this commit, and optionally a push, on both directories """
 
         lst = Scripts.do_up(args, jpc)
@@ -447,7 +447,7 @@ class Scripts:
             Scripts.both_repos(args, jpc, command)
 
     def do_down(args, jpc):
-        """ subcommand `down` """
+        """subcommand `down`"""
 
         logger.info(" ".join(argv[1:]))
         ret = requests.get(jpc.scriptsURL, auth=jpc.auth, headers=jpc.hdrs)
@@ -485,7 +485,7 @@ class Scripts:
         exit()
 
     def do_git(args, jpc):
-        """ subcommand `git` """
+        """subcommand `git`"""
 
         if args.command:
             string = args.command
@@ -497,7 +497,7 @@ class Scripts:
         exit()
 
     def do_list(args, jpc):
-        """ subcommand `list` """
+        """subcommand `list`"""
 
         logger.info("list command")
         # JSON is easier to deal with so use the header
@@ -516,7 +516,7 @@ class Scripts:
         Scripts.both_repos(args, jpc, command)
 
     def do_del(args, jpc):
-        """ subcommand `delete` """
+        """subcommand `delete`"""
 
         logger.info(" ".join(argv[1:]))
         xml_filepath = jpc.xml_dir / args.name
@@ -540,7 +540,7 @@ class Scripts:
         exit()
 
     def do_rename(args, jpc):
-        """ subcommand `rename` """
+        """subcommand `rename`"""
 
         logger.info(" ".join(argv[1:]))
         xml_filepath = jpc.xml_dir / args.src
@@ -569,7 +569,7 @@ class Scripts:
         exit()
 
     def do_up(args, jpc):
-        """ subcommand `up` """
+        """subcommand `up`"""
 
         logger.info(" ".join(argv[1:]))
         # then see if we do have scripts to be done
@@ -624,7 +624,7 @@ class Scripts:
         return " ".join(files)
 
     def do_verify(args, jpc):
-        """ verify scripts, XML and server against each other """
+        """verify scripts, XML and server against each other"""
 
         # get list of script files
         print("Lists:")
