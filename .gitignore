@@ -1,3 +1,8 @@
+# Miscellaneous
+com.github.autopkg.stage.plist
+text/
+xml/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
