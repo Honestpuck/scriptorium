@@ -1,6 +1,7 @@
 # Miscellaneous
 com.github.autopkg.stage.plist
 **/.vscode/settings.json
+*.sqlite
 text/
 xml/
 
