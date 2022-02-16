@@ -25,15 +25,73 @@ import requests
 import subprocess
 import difflib
 import inquirer
+import platform
+from decouple import config
+# from icecream import ic
+
+
+home = str(Path.home())     # home directory path
+cwd = Path.cwd()            # current working directory
+env = Path(".env")          # environment file
 
 # where we stash the XML files
-xml_dir = "~/work/test/XML"
-# where we stash the text files
-txt_dir = "~/work/test/text"
-# prefs file
-prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
+xml_dir = f"{cwd}/config/xml"
 
-LOGLEVEL = logging.DEBUG
+# where we stash the text files
+txt_dir = f"{cwd}/config/text"
+
+# prefs file
+if platform.system() == "Darwin":
+    prefs_file = Path(f"{home}/Library/Preferences/com.github.autopkg.stage.plist")
+elif platform.system() == "linux" or platform.system() == "linux2":
+    prefs_file = Path(f"{cwd}/config/com.github.autopkg.stage.plist")
+
+
+# TODO: fill out .env or plist programmatically with `else` block
+def get_creds():
+    """ Get credentials from .env file or plist, if not found, check env variables """
+
+    try:
+        if env.exists():
+            API_PASSWORD = config("API_PASSWORD")
+            API_USERNAME = config("API_USERNAME")
+            JSS_URL = config("JSS_URL")
+        elif prefs_file.exists() and prefs_file.stat().st_size > 0:
+            plist = os.path.expanduser(prefs_file)
+            fp = open(plist, "rb")
+            prefs = plistlib.load(fp)
+            API_PASSWORD = prefs["API_PASSWORD"]
+            API_USERNAME = prefs["API_USERNAME"]
+            JSS_URL = prefs["JSS_URL"]
+        else:
+            API_PASSWORD = os.environ.get("API_PASSWORD")
+            API_USERNAME = os.getenv("API_USERNAME")
+            JSS_URL = os.getenv("JSS_URL")
+    except Exception as e:
+        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
+
+    if not API_PASSWORD or not API_USERNAME or not JSS_URL:
+        print("Error: API_PASSWORD, API_USERNAME, or JSS_URL not found in .env, plist, or environment variables")
+        logger.error("Error: API_PASSWORD, API_USERNAME, or JSS_URL not found in .env, plist, or environment variables")
+        exit()
+
+    return API_USERNAME, API_PASSWORD, JSS_URL
+
+
+def check_file_dir(path, type):
+    """ Check if file or directory exists then create if not """
+
+    try:
+        if type == "file" and not Path(path).is_file():
+            Path(path).touch()
+            logger.info(f"Created {path}")
+        elif type == "dir" and not Path(path).is_dir():
+            Path(path).mkdir(parents=True, exist_ok=True)
+            logger.info(f"Created {path}")
+    except (FileExistsError, NotADirectoryError):
+        logger.error(f"{path} already exists")
+
 
 # template for use by add
 template = """<?xml version="1.0" encoding="UTF-8"?>
@@ -52,6 +110,7 @@ template = """<?xml version="1.0" encoding="UTF-8"?>
   </script>
 """
 
+LOGLEVEL = logging.DEBUG
 logger = logging.getLogger(__program__)
 
 
@@ -288,9 +347,8 @@ class Scripts:
     def setup_logging():
         """Defines a nicely formatted logger"""
 
-        log_dir = Path("~/Library/Logs").expanduser()
-        if not Path.is_dir(log_dir):
-            Path.mkdir(log_dir)
+        log_dir = Path(f"{home}/Library/Logs")
+        check_file_dir(log_dir, "dir")
         LOGFILE = log_dir / f"{__program__}.log"
         ch = logging.handlers.TimedRotatingFileHandler(
             LOGFILE, when="D", interval=1, backupCount=7
@@ -433,8 +491,10 @@ class Scripts:
         Scripts.do_commit(args, jpc)
 
     def do_commit(args, jpc):
-        """do a git commit"""
-        """ this commit, and optionally a push, on both directories """
+        """
+        do a git commit
+        this commit, and optionally a push, on both directories
+        """
 
         lst = Scripts.do_up(args, jpc)
         command = ["git", "add", "*"]
@@ -744,25 +804,23 @@ class Scripts:
     def main():
         Scripts.setup_logging()
         logger.info("Start")
+        # sanity check (pre-flight)
+        API_USERNAME, API_PASSWORD, JSS_URL = get_creds()
+        # init
         jpc = Jamf()
-        # sanity check
+        # sanity check (post-flight)
+        check_file_dir(xml_dir, "dir")
+        check_file_dir(txt_dir, "dir")
+        # check_file_dir(prefs_file, "file")    # will create an empty file
         jpc.xml_dir = Path(xml_dir).expanduser()
         jpc.txt_dir = Path(txt_dir).expanduser()
-        if not Path.is_dir(jpc.xml_dir):
-            raise ScriptError(f"directory {jpc.xml_dir} does not exist")
-        if not Path.is_dir(jpc.txt_dir):
-            raise ScriptError(f"directory {jpc.txt_dir} does not exist")
-        # get prefs
-        plist = os.path.expanduser(prefs_file)
-        fp = open(plist, "rb")
-        prefs = plistlib.load(fp)
         # we only operate on scripts so create a URL for the endpoint
-        jpc.scriptsURL = f"{prefs['JSS_URL']}/JSSResource/scripts"
+        jpc.scriptsURL = f"{JSS_URL}/JSSResource/scripts"
         # we get a list of categories for `add` so another endpoint
-        jpc.catURL = f"{prefs['JSS_URL']}/JSSResource/categories"
+        jpc.catURL = f"{JSS_URL}/JSSResource/categories"
         # for the whole list JSON is handier so
         jpc.hdrs = {"Accept": "application/json"}
-        jpc.auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])
+        jpc.auth = API_USERNAME, API_PASSWORD
         logger.debug("Prefs loaded")
         fred = Parser()  # I just love Fred, he does all the dirty work
         # handle no arguments on command line, fred doesn't do this well
