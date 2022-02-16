@@ -1,0 +1,20 @@
+{
+    "launch": {
+        "configurations": [
+            {
+                "name": "Python: Current File",
+                "type": "python",
+                "request": "launch",
+                "program": "${file}",
+                "console": "integratedTerminal",
+                "cwd": "${fileDirname}",
+                "env": {
+                    "API_PASSWORD": "password",
+                    "API_USERNAME": "account",
+                    "JSS_URL": "https://example.jamfcloud.com"
+                },
+                "args": ["list"]
+            }
+        ]
+    }
+}
