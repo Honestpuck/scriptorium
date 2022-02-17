@@ -27,6 +27,21 @@ _Note: Bug reports and change suggestions gratefully accepted_
 - `up`        uploads all changes and additions to the server
 - `verify`    verify text against XML against Jamf server
 
+<!--@Honestpuck this appears to be the formatting you're looking for above:
+```
+add         used to add a script to the system.
+commit      `git commit` in both directories.
+delete      remove a script in all three spots
+down        pulls all scripts from the server
+git         asks for a string and runs it as a git command in both directories
+list        lists all scripts on the JP server
+push        `git push` in both directories
+rename      rename a script in all three spots
+up          uploads all changes and additions to the server
+verify      verify text against XML against Jamf server
+```
+-->
+
 ## Install
 
 `scriptorium` requires the `requests` and `inquirer` libraries. They can be installed by running `pip3 install requests` and `pip3 install inquirer`.
@@ -361,7 +376,7 @@ Please feel free to reach out via DM [@pythoninthegrass](https://macadmins.slack
     docker attach scriptorium
 
     # run command inside container
-    python scriptorium.py
+    python scriptorium
 
     # destroy container
     docker-compose down
