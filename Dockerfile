@@ -65,9 +65,9 @@ RUN python3.10 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # call script
-# ENTRYPOINT ["python", "scriptorium"]
+ENTRYPOINT ["python", "scriptorium"]
 
 # pass help flag by default `docker run scriptorium`
 # can be overrridden via `docker run scriptorium down`
-# CMD ["-h"]
-CMD [ "bash" ]
+CMD ["-h"]
+# CMD [ "bash" ]

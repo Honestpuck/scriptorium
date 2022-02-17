@@ -8,6 +8,8 @@ authors = ["pythoninthegrass <4097471+pythoninthegrass@users.noreply.github.com>
 python = "^3.10"
 inquirer = "^2.9.1"
 requests = "^2.27.1"
+requests-cache = "^0.9.1"
+python-decouple = "^3.6"
 
 [tool.poetry.group.dev.dependencies]
 icecream = "^2.1.1"
