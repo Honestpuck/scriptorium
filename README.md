@@ -53,7 +53,7 @@ At this point you need to create the repositories, `text` and `xml` in your git 
 Now create a directory `scripts` on your computer, cd into it and perform a git clone to pull down both repositories. Git will tell you you just pulled blank repositories.
 
 Set the variables at the top of scriptorium to point to the two directories and the location of the prefs file containing the JSS location, user and password. The script assumes it is in the same format as the jss_importer prefs in the AutoPkg prefs file. Here is the minimum required plist:
-```
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -69,20 +69,25 @@ Set the variables at the top of scriptorium to point to the two directories and 
 ```
 
 You can create it or add it to your existing AutoPkg preference file with:
-```
+```bash
 defaults write com.github.autopkg.plist API_PASSWORD 'password'
 defaults write com.github.autopkg.plist USERNAME 'account'
 defaults write com.github.autopkg.plist JSS_URL 'https://example.jamfcloud.com'
 ```
 
 You can find the spot to set the variables in scriptorium, it looks like:
-```
+```python
 # where we stash the XML files
-xml_dir = "~/work/test/XML"
+xml_dir = f"{cwd}/config/xml"
+
 # where we stash the text files
-txt_dir = "~/work/test/text"
+txt_dir = f"{cwd}/config/text"
+
 # prefs file
-prefs_file = "~/Library/Preferences/com.github.autopkg.stage.plist"
+if platform.system() == "Darwin":
+    prefs_file = Path(f"{home}/Library/Preferences/com.github.autopkg.stage.plist")
+elif platform.system() == "linux" or platform.system() == "linux2":
+    prefs_file = Path(f"{cwd}/config/com.github.autopkg.stage.plist")
 ```
 
 Link `scriptorium` into somewhere in your path like `/usr/local/bin`, personally I have a bin directory in my home directory just for tools like this.
