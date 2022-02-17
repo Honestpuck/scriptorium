@@ -4,8 +4,8 @@ services:
   app:
     container_name: scriptorium
     image: docker_python
-    stdin_open: true        # false for `entrypoint` in Dockerfile
-    tty: true               # false for `entrypoint` in Dockerfile
+    stdin_open: false        # false for `entrypoint` in Dockerfile
+    tty: false               # false for `entrypoint` in Dockerfile
     volumes:
       - ./:/home/appuser/app
     build:
