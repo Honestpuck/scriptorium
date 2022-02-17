@@ -323,9 +323,7 @@ deactivate
 
 ## Docker
 
-As mentioned in the [MacAdmins Slack](https://macadmins.slack.com/archives/C02JJ35PZ51/p1644515156418309?thread_ts=1644273031.107999&cid=C02JJ35PZ51), this branch adds Docker support to the `scriptorium` script.
-
-There are some minor changes in the main script that need to happen for `scriptorium` to run successfully, but a future commit will address those outstanding issues.
+As mentioned in the [MacAdmins Slack](https://macadmins.slack.com/archives/C02JJ35PZ51/p1644515156418309?thread_ts=1644273031.107999&cid=C02JJ35PZ51), this section adds experimental Docker support to the `scriptorium` script.
 
 Please feel free to reach out via DM [@pythoninthegrass](https://macadmins.slack.com/archives/D1TE80HA7).
 
