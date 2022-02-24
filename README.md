@@ -403,7 +403,7 @@ Please feel free to reach out via DM [@pythoninthegrass](https://macadmins.slack
 
 #### Interactive shell
 * For general testing within a shell, leave the entrypoint commented out to simply call `CMD [ "bash" ]`
-* Change the `Dockerfile`  to comment out `ENTRYPOINT ["python", "scriptorium"]` and `CMD ["-h"]`, then uncomment `CMD [ "bash" ]`:
+* Change the `Dockerfile`  to comment out `ENTRYPOINT ["python", "scriptorium"]` and `CMD ["-h"]`, then uncomment `CMD [ "bash" ]`
     ```bash
     # call script
     # ENTRYPOINT ["python", "scriptorium"]
