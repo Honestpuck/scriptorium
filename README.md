@@ -342,7 +342,6 @@ deactivate
 ```
 
 ## Docker
-
 As mentioned in the [MacAdmins Slack](https://macadmins.slack.com/archives/C02JJ35PZ51/p1644515156418309?thread_ts=1644273031.107999&cid=C02JJ35PZ51), this section adds experimental Docker support to the `scriptorium` script.
 
 Please feel free to reach out via DM [@pythoninthegrass](https://macadmins.slack.com/archives/D1TE80HA7).
@@ -368,25 +367,69 @@ Please feel free to reach out via DM [@pythoninthegrass](https://macadmins.slack
         * Setup an interactive environment via `stdin_open` and `tty` directives set to `true`
             * Equivalent to `docker run -it`
             * If both are set to `false`, `docker-compose` will look for `ENTRYPOINT` and/or `CMD` in the `Dockerfile`
-
-### Usage
-* For general testing within a shell, leave the entrypoint commented out to simply call `CMD [ "bash" ]`
-* After the main script is refactored, uncommenting out the entrypoint and `CMD ["-h"]` will run `scriptorium` with the `-h` or _help_ argument passed
-* Docker commands
+### Teardown
+* Remove the container and network
     ```bash
-    # start container
-    docker-compose up --remove-orphans -d
-
-    # exec into container
-    docker attach scriptorium
-
-    # run command inside container
-    python scriptorium
-
     # destroy container
     docker-compose down
     ```
 
+### Usage
+#### docker-compose run
+* Use `scriptorium` similarly to a binary from within the repo directory
+    ```bash
+    $ docker-compose run scriptorium -h
+    usage: scriptorium [-h] {add,commit,delete,down,git,list,push,rename,up,verify} ...
+
+    options:
+    -h, --help            show this help message and exit
+
+    subcommands:
+
+    {add,commit,delete,down,git,list,push,rename,up,verify}
+        add                 add script to system
+        commit              git commit
+        delete              delete a script from system
+        down                downloads all scripts from the server
+        git                 asks for a string and runs it as a git command
+        list                lists all scripts on the server
+        push                git push
+        rename              rename a script
+        up                  upload changed scripts
+        verify              verify text against XML against Jamf server
+
+    for command help: `scriptorium <command> -h`
+    ```
+
+#### Interactive shell
+* For general testing within a shell, leave the entrypoint commented out to simply call `CMD [ "bash" ]`
+* Change the `Dockerfile`  to comment out `ENTRYPOINT ["python", "scriptorium"]` and `CMD ["-h"]`, then uncomment `CMD [ "bash" ]`:
+    ```bash
+    # call script
+    # ENTRYPOINT ["python", "scriptorium"]
+
+    # pass help flag by default `docker run scriptorium`
+    # can be overrridden via `docker run scriptorium down`
+    # CMD ["-h"]
+    CMD [ "bash" ]
+    ```
+* Set `docker-compose.yml` to be interactive
+    ```bash
+    stdin_open: true
+    tty: true
+    ```
+* Rebuild the image
+    ```bash
+    docker-compose build --parallel
+    ```
+* Start and exec into the container
+    ```bash
+    docker-compose up --remove-orphans -d               # start container
+    docker attach scriptorium                           # exec into container
+    appuser@02f13416c25b:~/app$ python scriptorium -h   # run command inside container
+    usage: scriptorium [-h] {add,commit,delete,down,git,list,push,rename,up,verify} ...
+    ```
+ 
 ## Further Reading
 [Basic usage | Documentation | Poetry - Python dependency management and packaging made easy](https://python-poetry.org/docs/basic-usage/)
 
