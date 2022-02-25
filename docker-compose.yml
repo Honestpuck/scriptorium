@@ -1,7 +1,7 @@
 version: "3.7"
 
 services:
-  app:
+  scriptorium:
     container_name: scriptorium
     image: docker_python
     stdin_open: false        # false for `entrypoint` in Dockerfile
