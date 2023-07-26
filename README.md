@@ -71,7 +71,7 @@ Set the variables at the top of scriptorium to point to the two directories and 
 You can create it or add it to your existing AutoPkg preference file with:
 ```bash
 defaults write com.github.autopkg.plist API_PASSWORD 'password'
-defaults write com.github.autopkg.plist USERNAME 'account'
+defaults write com.github.autopkg.plist API_USERNAME 'account'
 defaults write com.github.autopkg.plist JSS_URL 'https://example.jamfcloud.com'
 ```
 
